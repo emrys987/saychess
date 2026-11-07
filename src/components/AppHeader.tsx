@@ -1,22 +1,27 @@
-import { useRouter } from 'expo-router';
-import { ScrollView, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
+import { useState } from 'react';
+import { Modal, ScrollView, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/AuthProvider';
 import { ROLE_LABELS } from '@/features/auth/roles';
 import { colors, fonts, layout, radius } from '@/theme';
 
-const NAV = [
-  { href: '/', label: 'Ana Sayfa', badge: '' },
-  { href: '/oda', label: 'Ders Odası', badge: 'çalışıyor' },
-  { href: '/odev', label: 'Ödev', badge: 'yeni' },
-  { href: '/koc', label: 'Koç Bul', badge: '' },
-  { href: '/canli', label: 'Canlı Ders', badge: 'yeni' },
-  { href: '/takvim', label: 'Takvim', badge: '' },
-  { href: '/rehber', label: 'Rehber', badge: 'yeni' },
-  { href: '/veli', label: 'Veli Paneli', badge: '' },
-  { href: '/paketler', label: 'Paketler', badge: '' },
-  { href: '/profil', label: 'Profilim', badge: '' },
+// Sık kullanılan sayfalar üstte; geri kalanı "Daha fazla" menüsünde.
+const ANA_NAV = [
+  { href: '/', label: 'Ana Sayfa' },
+  { href: '/oda', label: 'Ders Odası' },
+  { href: '/odev', label: 'Ödev' },
+  { href: '/canli', label: 'Canlı Ders' },
+  { href: '/takvim', label: 'Takvim' },
+] as const;
+
+const DAHA_NAV = [
+  { href: '/koc', label: 'Koç Bul' },
+  { href: '/rehber', label: 'Satranç Rehberi' },
+  { href: '/veli', label: 'Veli Paneli' },
+  { href: '/paketler', label: 'Paketler' },
+  { href: '/profil', label: 'Profilim' },
 ] as const;
 
 /** index-3.html: .logo .mark — 2x2 dama deseni */
@@ -34,6 +39,13 @@ export function AppHeader({ active }: { active: string }) {
   const router = useRouter();
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
+  const [dahaAcik, setDahaAcik] = useState(false);
+  const dahaAktif = DAHA_NAV.some((i) => i.href === active);
+
+  const git = (href: Href) => {
+    setDahaAcik(false);
+    router.navigate(href);
+  };
 
   return (
     <View style={[styles.wrap, { paddingTop: insets.top }]}>
@@ -46,9 +58,14 @@ export function AppHeader({ active }: { active: string }) {
           </View>
         </View>
         {profile?.rol ? (
-          <View style={styles.rolePill}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Profilime git"
+            onPress={() => git('/profil')}
+            style={({ pressed }) => [styles.rolePill, pressed && { opacity: 0.85 }]}
+          >
             <Text style={styles.roleText}>{ROLE_LABELS[profile.rol]}</Text>
-          </View>
+          </Pressable>
         ) : null}
       </View>
 
@@ -58,22 +75,57 @@ export function AppHeader({ active }: { active: string }) {
         style={styles.navScroll}
         contentContainerStyle={styles.nav}
       >
-        {NAV.map((item) => {
+        {ANA_NAV.map((item) => {
           const on = active === item.href;
           return (
             <Pressable
               key={item.href}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
-              onPress={() => router.navigate(item.href)}
+              onPress={() => git(item.href)}
               style={({ pressed }) => [styles.navBtn, on && styles.navBtnOn, pressed && { opacity: 0.8 }]}
             >
               <Text style={styles.navText}>{item.label}</Text>
-              {item.badge ? <Text style={[styles.badge, styles.badgeLive]}>{item.badge}</Text> : null}
             </Pressable>
           );
         })}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Diğer sayfalar"
+          onPress={() => setDahaAcik(true)}
+          style={({ pressed }) => [styles.navBtn, dahaAktif && styles.navBtnOn, pressed && { opacity: 0.8 }]}
+        >
+          <Text style={styles.navText}>Daha fazla</Text>
+          <Text style={styles.plus}>+</Text>
+        </Pressable>
       </ScrollView>
+
+      <Modal visible={dahaAcik} transparent animationType="fade" onRequestClose={() => setDahaAcik(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setDahaAcik(false)}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Sayfalar</Text>
+            {DAHA_NAV.map((item) => {
+              const on = active === item.href;
+              return (
+                <Pressable
+                  key={item.href}
+                  accessibilityRole="button"
+                  onPress={() => git(item.href)}
+                  style={({ pressed }) => [
+                    styles.sheetItem,
+                    on && { backgroundColor: colors.pink },
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  <Text style={styles.sheetText}>{item.label}</Text>
+                  {on ? <Text style={styles.sheetText}>•</Text> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -147,18 +199,41 @@ const styles = StyleSheet.create({
   },
   navBtnOn: { backgroundColor: colors.pink },
   navText: { fontWeight: '700', fontSize: 14, color: colors.ink },
-  badge: {
-    fontFamily: fonts.mono,
-    fontSize: 9,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    backgroundColor: '#0e0e1014',
-    borderRadius: radius.pill,
-    paddingVertical: 2,
-    paddingHorizontal: 7,
-    color: colors.ink,
-    overflow: 'hidden',
+  plus: { fontFamily: fonts.mono, fontSize: 13, fontWeight: '700', color: colors.ink, marginLeft: 2 },
+
+  backdrop: {
+    flex: 1,
+    backgroundColor: '#0e0e1066',
+    alignItems: 'center',
+    paddingTop: 96,
+    paddingHorizontal: 16,
   },
-  badgeLive: { backgroundColor: colors.cheese },
+  sheet: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    borderRadius: radius.card - 4,
+    padding: 12,
+  },
+  sheetTitle: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+    color: colors.mut,
+    marginBottom: 8,
+    marginLeft: 6,
+  },
+  sheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: radius.input,
+  },
+  sheetText: { fontWeight: '700', fontSize: 15, color: colors.ink },
 });

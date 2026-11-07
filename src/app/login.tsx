@@ -26,8 +26,9 @@ export default function Login() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={ui.screen}>
-        <Eyebrow>Say Chess · birebir satranç dersi</Eyebrow>
+      <ScrollView contentContainerStyle={[ui.screen, { flexGrow: 1, justifyContent: 'center', paddingVertical: 24 }]}>
+        <View style={s.kutu}>
+          <Eyebrow>Say Chess · birebir satranç dersi</Eyebrow>
 
         {/* .scene: siyah zemin + dama deseni + büyük at glifi + cam kart */}
         <View style={s.scene}>
@@ -64,9 +65,10 @@ export default function Login() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 14 }}>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 14, justifyContent: 'center' }}>
           <Chip label="demo" tone="wait" />
           <Text style={ui.mut}>Koçlar, öğrenciler ve veliler için tek uygulama.</Text>
+        </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -74,6 +76,8 @@ export default function Login() {
 }
 
 const s = StyleSheet.create({
+  // İçerik her ekranda ortada, en fazla 460 px genişlikte
+  kutu: { width: '100%', maxWidth: 460, alignSelf: 'center' },
   scene: {
     position: 'relative',
     overflow: 'hidden',

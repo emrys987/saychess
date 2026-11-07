@@ -19,9 +19,12 @@ export const supabase = createClient<Database>(supabaseUrl, supabasePublishableK
   auth: {
     // Mobilde oturum expo-sqlite tabanlı localStorage'da; web'de tarayıcının kendi localStorage'ı kullanılır.
     ...(isWeb ? {} : { storage: localStorage }),
+    // PKCE: dönüşte URL'de ?code= gelir, uygulama bunu oturuma çevirir.
+    // Implicit akış Expo Go'da siyah ekranda takılabiliyor.
+    flowType: 'pkce',
     autoRefreshToken: true,
     persistSession: true,
-    // Web'de Google dönüşünde token URL'den okunur; mobilde URL yoktur.
+    // Web'de Google dönüşünde kod URL'den okunur; mobilde bunu biz yapıyoruz.
     detectSessionInUrl: isWeb,
   },
 });

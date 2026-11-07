@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession(); // yalnızca web için gerekli
 
-const redirectTo = makeRedirectUri();
+// Expo Go'da exp://<ip>:8081/--/auth-callback, dev build'de saychess://auth-callback üretir.
+const redirectTo = makeRedirectUri({ path: 'auth-callback' });
 
 /** Supabase dönüş URL'sindeki `?query` ve `#fragment` parametrelerini birleştirir. */
 export function parseAuthParams(url: string): Record<string, string> {
@@ -25,11 +26,29 @@ async function createSessionFromUrl(url: string) {
   const params = parseAuthParams(url);
   if (params.error) throw new Error(params.error_description ?? params.error);
 
+  // PKCE akışı: dönüş adresinde ?code=... gelir
+  if (params.code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+    if (error) throw error;
+    return;
+  }
+
+  // Yedek: implicit akış (#access_token=...)
   const { access_token, refresh_token } = params;
   if (!access_token || !refresh_token) return;
 
   const { error } = await supabase.auth.setSession({ access_token, refresh_token });
   if (error) throw error;
+}
+
+/**
+ * Uygulamaya gelen herhangi bir derin bağlantıyı oturuma çevirir.
+ * Tarayıcı/oturum penceresi kapanmasa bile Expo Go bağlantıyı uygulamaya iletir;
+ * bu dinleyici sayesinde giriş tamamlanır.
+ */
+export async function handleAuthUrl(url: string) {
+  if (!url.includes('code=') && !url.includes('access_token=') && !url.includes('error=')) return;
+  await createSessionFromUrl(url);
 }
 
 export async function signInWithGoogle() {

@@ -1,6 +1,9 @@
 import type { Session } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 
+import { handleAuthUrl } from '@/features/auth/google';
 import { supabase } from '@/lib/supabase';
 import type { Database, Profile } from '@/types/database';
 
@@ -39,6 +42,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSessionReady(true);
     });
     return () => data.subscription.unsubscribe();
+  }, []);
+
+  // Native: Google/Supabase dönüşünde gelen derin bağlantıyı oturuma çevir.
+  // (Tarayıcı penceresi kapanmasa bile giriş tamamlanır.)
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const abone = Linking.addEventListener('url', ({ url }) => {
+      handleAuthUrl(url).catch((err) => console.warn('Giriş dönüşü işlenemedi:', err));
+    });
+    Linking.getInitialURL()
+      .then((url) => (url ? handleAuthUrl(url) : null))
+      .catch(() => null);
+
+    return () => abone.remove();
   }, []);
 
   const userId = session?.user.id;

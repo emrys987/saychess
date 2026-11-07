@@ -40,6 +40,7 @@ export default function DersOdası() {
   }, [userId, savedCount]);
 
   const mac = oyun.mod === 'mac';
+  const botMod = oyun.mod === 'bot';
   const turn = oyun.fen.split(' ')[1];
   const canli = mac && oyun.running && !oyun.over;
 
@@ -59,7 +60,7 @@ export default function DersOdası() {
           lastMove={oyun.lastMove}
           checkSquare={oyun.checkSquare}
           flipped={oyun.flipped}
-          disabled={!!oyun.over}
+          disabled={!!oyun.over || oyun.botDusunuyor}
           onSquarePress={oyun.press}
         />
         <View style={[s.clockRow, { marginTop: 8, marginBottom: 0 }]}>
@@ -73,18 +74,42 @@ export default function DersOdası() {
 
       <Card>
         <View style={s.head}>
-          <Text style={ui.h3}>{mac ? '5+3 maç' : 'Serbest çalışma'}</Text>
-          <Chip label={mac ? (canli ? 'çalışıyor' : 'hazır') : 'serbest'} tone={mac && canli ? 'wait' : 'info'} />
+          <Text style={ui.h3}>{mac ? '5+3 maç' : botMod ? 'Bota karşı' : 'Serbest çalışma'}</Text>
+          <Chip
+            label={mac ? (canli ? 'çalışıyor' : 'hazır') : botMod ? (oyun.botDusunuyor ? 'bot düşünüyor…' : 'senin sıran') : 'serbest'}
+            tone={mac && canli ? 'wait' : botMod ? 'wait' : 'info'}
+          />
         </View>
         <View style={s.row}>
           <Button sm title={mac ? 'Maçı yeniden başlat' : 'Maça başla (5+3)'} onPress={oyun.macBaslat} />
           {mac && !oyun.over ? (
             <Button sm title="Teslim ol" variant="secondary" onPress={oyun.teslim} />
           ) : null}
+          <Button sm title="Bota karşı" variant={botMod ? 'cheese' : 'secondary'} onPress={oyun.botBaslat} />
           <Button sm title="Geri al" variant="secondary" onPress={oyun.geriAl} disabled={mac} />
           <Button sm title="Çevir" variant="secondary" onPress={oyun.cevir} />
           <Button sm title="Serbest mod" variant="secondary" onPress={oyun.serbestMod} />
         </View>
+
+        {botMod ? (
+          <View style={[s.row, { marginTop: 10 }]}>
+            <Text style={ui.mut}>Seviye:</Text>
+            {[
+              { d: 1, ad: 'Basit' },
+              { d: 2, ad: 'Orta' },
+              { d: 3, ad: 'Zor' },
+            ].map((sv) => (
+              <Button
+                key={sv.d}
+                sm
+                title={sv.ad}
+                variant={oyun.botSeviye === sv.d ? 'cheese' : 'secondary'}
+                onPress={() => oyun.botSeviyeSec(sv.d)}
+              />
+            ))}
+            <Text style={ui.mut}>Beyaz sen, siyah bot.</Text>
+          </View>
+        ) : null}
         {oyun.over ? (
           <>
             <Msg tone="ok">

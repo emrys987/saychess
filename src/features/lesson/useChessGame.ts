@@ -2,12 +2,13 @@ import { Chess, type Color, type Square } from 'chess.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { BoardCell } from '@/components/Board';
+import { searchRoot } from '@/lib/chess/engine';
 import { supabase } from '@/lib/supabase';
 
 export const MATCH_SECONDS = 300; // 5 dk
 export const INCREMENT_SECONDS = 3;
 
-export type Mod = 'serbest' | 'mac';
+export type Mod = 'serbest' | 'mac' | 'bot';
 export type GameOver = { sonuc: string; sebep: string };
 
 function describeEnd(g: Chess): GameOver | null {
@@ -38,6 +39,9 @@ export function useChessGame(userId: string | undefined) {
   const [flipped, setFlipped] = useState(false);
   const [mesaj, setMesaj] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
+  // Bota karşı oynama: bot siyah, insan beyaz. Seviye = motor derinliği.
+  const [botSeviye, setBotSeviye] = useState(1);
+  const [botDusunuyor, setBotDusunuyor] = useState(false);
 
   const board: BoardCell[][] = useMemo(() => new Chess(fen).board(), [fen]);
 
@@ -67,7 +71,7 @@ export function useChessGame(userId: string | undefined) {
         setMesaj(`Maç bitti: ${sonuc.sebep}. Kaydetmek için giriş yapın.`);
         return;
       }
-      game.setHeader('Event', 'Say Chess 5+3 maç');
+      game.setHeader('Event', mod === 'mac' ? 'Say Chess 5+3 maç' : mod === 'bot' ? 'Say Chess bota karşı' : 'Say Chess serbest');
       game.setHeader('Result', sonuc.sonuc);
       void supabase
         .from('games')
@@ -83,12 +87,37 @@ export function useChessGame(userId: string | undefined) {
           if (!error) setSavedCount((n) => n + 1);
         });
     },
-    [game, userId],
+    [game, userId, mod],
   );
+
+  // Botun hamlesi: motoru çalıştırıp tahtaya uygular (insan beyaz, bot siyah).
+  const botOyna = useCallback(() => {
+    if (overRef.current) return;
+    const baslangicFen = game.fen();
+    setBotDusunuyor(true);
+    // Kısa gecikme: "düşünüyor" göstergesi görünsün, arayüz donmasın
+    setTimeout(() => {
+      try {
+        const { moves } = searchRoot(baslangicFen, botSeviye);
+        const enIyi = moves[0];
+        if (!enIyi) return;
+        const m = game.move({ from: enIyi.move.from, to: enIyi.move.to, promotion: 'q' });
+        setFen(game.fen());
+        setLastMove({ from: m.from, to: m.to });
+        const ended = describeEnd(game);
+        if (ended) finish(ended);
+      } catch {
+        setMesaj('Bot hamle üretemedi, tekrar dene.');
+      } finally {
+        setBotDusunuyor(false);
+      }
+    }, 40);
+  }, [game, botSeviye, finish]);
 
   const press = useCallback(
     (square: string) => {
       if (over) return;
+      if (mod === 'bot' && botDusunuyor) return; // bot düşünürken dokunma
       if (selected && targets.includes(square as Square)) {
         try {
           const move = game.move({ from: selected as Square, to: square as Square, promotion: 'q' });
@@ -106,6 +135,7 @@ export function useChessGame(userId: string | undefined) {
           }
           const ended = describeEnd(game);
           if (ended) finish(ended);
+          else if (mod === 'bot') botOyna();
         } catch {
           setSelected(null);
         }
@@ -114,7 +144,7 @@ export function useChessGame(userId: string | undefined) {
       const piece = game.get(square as Square);
       setSelected(piece && piece.color === game.turn() ? square : null);
     },
-    [game, mod, over, selected, targets, finish],
+    [game, mod, over, selected, targets, finish, botDusunuyor, botOyna],
   );
 
   // Saat: yalnızca 5+3 maçta ve maç başladıktan sonra işler.
@@ -152,6 +182,7 @@ export function useChessGame(userId: string | undefined) {
       setSelected(null);
       setLastMove(null);
       setMesaj(null);
+      setBotDusunuyor(false);
     },
     [game],
   );
@@ -194,6 +225,10 @@ export function useChessGame(userId: string | undefined) {
     mesaj,
     savedCount,
     hamleler,
+    botSeviye,
+    botSeviyeSec: setBotSeviye,
+    botDusunuyor,
+    botBaslat: () => reset('bot'),
     press,
     macBaslat,
     serbestMod,
