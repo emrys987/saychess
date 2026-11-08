@@ -40,11 +40,16 @@ export function AppHeader({ active }: { active: string }) {
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const [dahaAcik, setDahaAcik] = useState(false);
-  const dahaAktif = DAHA_NAV.some((i) => i.href === active);
 
-  const git = (href: Href) => {
+  const dahaNavList = [
+    ...DAHA_NAV,
+    ...(profile?.rol === 'moderator' ? [{ href: '/yonetim' as const, label: '🛡️ Yönetim Paneli' }] : []),
+  ];
+  const dahaAktif = dahaNavList.some((i) => i.href === active);
+
+  const git = (href: Href | string) => {
     setDahaAcik(false);
-    router.navigate(href);
+    router.navigate(href as any);
   };
 
   return (
@@ -57,16 +62,34 @@ export function AppHeader({ active }: { active: string }) {
             <Text style={styles.logoSub}>birebir satranç dersi</Text>
           </View>
         </View>
-        {profile?.rol ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Profilime git"
-            onPress={() => git('/profil')}
-            style={({ pressed }) => [styles.rolePill, pressed && { opacity: 0.85 }]}
-          >
-            <Text style={styles.roleText}>{ROLE_LABELS[profile.rol]}</Text>
-          </Pressable>
-        ) : null}
+
+        <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {profile?.rol === 'moderator' ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Moderatör Paneline Git"
+              onPress={() => git('/yonetim')}
+              style={({ pressed }) => [
+                styles.modPill,
+                active === '/yonetim' && styles.modPillActive,
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              <Text style={styles.modText}>🛡️ Yönetim</Text>
+            </Pressable>
+          ) : null}
+
+          {profile?.rol ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Profilime git"
+              onPress={() => git('/profil')}
+              style={({ pressed }) => [styles.rolePill, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.roleText}>{ROLE_LABELS[profile.rol]}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <ScrollView
@@ -90,11 +113,27 @@ export function AppHeader({ active }: { active: string }) {
           );
         })}
 
+        {profile?.rol === 'moderator' ? (
+          <Pressable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active === '/yonetim' }}
+            onPress={() => git('/yonetim')}
+            style={({ pressed }) => [
+              styles.navBtn,
+              { backgroundColor: colors.cheese },
+              active === '/yonetim' && styles.navBtnOn,
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Text style={[styles.navText, { fontWeight: '800' }]}>🛡️ Yönetim</Text>
+          </Pressable>
+        ) : null}
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Diğer sayfalar"
           onPress={() => setDahaAcik(true)}
-          style={({ pressed }) => [styles.navBtn, dahaAktif && styles.navBtnOn, pressed && { opacity: 0.8 }]}
+          style={({ pressed }) => [styles.navBtn, dahaAktif && active !== '/yonetim' && styles.navBtnOn, pressed && { opacity: 0.8 }]}
         >
           <Text style={styles.navText}>Daha fazla</Text>
           <Text style={styles.plus}>+</Text>
@@ -105,7 +144,7 @@ export function AppHeader({ active }: { active: string }) {
         <Pressable style={styles.backdrop} onPress={() => setDahaAcik(false)}>
           <View style={styles.sheet}>
             <Text style={styles.sheetTitle}>Sayfalar</Text>
-            {DAHA_NAV.map((item) => {
+            {dahaNavList.map((item) => {
               const on = active === item.href;
               return (
                 <Pressable
@@ -168,7 +207,6 @@ const styles = StyleSheet.create({
     color: colors.mut,
   },
   rolePill: {
-    marginLeft: 'auto',
     borderWidth: 1.5,
     borderColor: colors.ink,
     backgroundColor: colors.pink,
@@ -177,6 +215,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   roleText: { fontWeight: '700', fontSize: 13, color: colors.ink },
+  modPill: {
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    backgroundColor: colors.cheese,
+    borderRadius: radius.pill,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  modPillActive: {
+    backgroundColor: colors.pink,
+    borderWidth: 2,
+  },
+  modText: { fontWeight: '800', fontSize: 13, color: colors.ink },
 
   navScroll: { width: '100%', maxWidth: layout.maxWidth, alignSelf: 'center' },
   nav: {

@@ -1,155 +1,183 @@
-# Say Chess
+# Say Chess ♟️
 
-Çocuklar için koçlu satranç uygulaması. **Expo (React Native) + TypeScript + Supabase**, tek kod tabanından iOS, Android ve web.
+Çocuklar ve gençler için koç destekli, interaktif satranç eğitimi ve gelişim takip platformu.  
+**Expo (React Native) + TypeScript + Supabase** mimarisiyle tek kod tabanından **iOS, Android ve Web** desteği sunar.
 
-> `index-3.html` eski HTML/JS demodur. Özellikler TypeScript'e taşınana kadar referans olarak duruyor; taşıma bitince silinecek.
-> Görsel dil (renkler, serif başlıklar, mono sayaçlar, pill butonlar, `phead` lekeli başlık, siyah giriş sahnesi) bu dosyadan birebir taşınıyor: `src/theme` + `src/components/ui.tsx`.
+---
 
-## Kurulum
+## 🎯 Proje Hakkında
+
+Say Chess; satranç öğrenen çocukları, eğitmenleri (koçları) ve velileri tek bir çatı altında buluşturan modern bir mobil ve web uygulamasıdır. Klasik satranç platformlarından farklı olarak; maç analizlerinden otomatik ödev üretimi, canlı birebir ders senkronizasyonu ve veli takip mekanizmaları barındırır.
+
+### ✨ Temel Özellikler
+
+* **♟️ Ders Odası & Oyun Modları:** 
+  * `chess.js` tabanlı tahta motoru, yasal hamle denetimi ve süre kontrolü (5+3).
+  * Çevrimdışı/bota karşı pratik yapma imkânı.
+* **⚡ Canlı Ders (Realtime Eşzamanlama):**
+  * Supabase Realtime ile 6 haneli davet kodu üzerinden koç ve öğrenci arasında anlık hamle senkronizasyonu.
+* **🧩 Akıllı Ödev & Bulmaca Sistemi:**
+  * Oynanan maçların motor analiziyle hatalı pozisyonlardan otomatik ödev ve taktik bulmaca üretimi.
+  * Tematik bulmaca setleri (Tek hamlede mat, çatal, açmaz vb.).
+* **👨‍🏫 Koç Bul & Randevu Yönetimi:**
+  * Onaylı koç profilleri, filtreleme, müsaitlik saatleri ve randevu takvimi.
+  * Ders sonu puanlama ve koç değerlendirme sistemi.
+* **👨‍👩‍👧 Veli Paneli:**
+  * Veli kodu ile öğrenci hesabını eşleyerek ders katılımı, maç performansı ve ödev tamamlama istatistiklerini takip etme.
+* **📚 Satranç Rehberi & Moderasyon:**
+  * Koçların ve moderatörlerin eğitici yazılar yayınlayabildiği dinamik içerik platformu.
+* **🔐 Rol Tabanlı Güvenlik (RBAC):**
+  * Supabase Auth (Google OAuth & E-posta) entegrasyonu, PostgreSQL Row Level Security (RLS) ile korunan veritabanı.
+
+---
+
+## 🛠️ Teknoloji Yığını
+
+* **Frontend:** [React Native](https://reactnative.dev/) (0.88), [Expo](https://expo.dev/) (SDK 58), [Expo Router](https://docs.expo.dev/router/introduction/)
+* **Dil:** [TypeScript](https://www.typescriptlang.org/) (Strict mode)
+* **Satranç Motoru / Mantığı:** [chess.js](https://github.com/jhlywa/chess.js)
+* **Backend & Veritabanı:** [Supabase](https://supabase.com/) (PostgreSQL, Auth, Realtime, Row Level Security)
+* **Web Desteği:** `react-native-web` (Mobil ile %100 paylaşılan UI bileşenleri)
+
+---
+
+## 📂 Dizin Yapısı
+
+```text
+src/
+├── app/                 # Expo Router dosya tabanlı navigasyon
+│   ├── _layout.tsx      # Global oturum & rol korumalı rotalar
+│   ├── login.tsx        # Giriş & kimlik doğrulama ekranı
+│   ├── rol-sec.tsx      # İlk giriş rol seçimi (Koç, Öğrenci, Veli)
+│   └── (tabs)/          # Ana sekme rotaları (Oda, Ödev, Canlı, Koç, Veli...)
+├── components/          # Paylaşılan UI bileşenleri (Button, Card, Modal vb.)
+├── features/            # İş mantığı ve modüller
+│   ├── auth/            # AuthProvider, Google OAuth, rol yönetimi
+│   ├── booking/         # Randevu ve takvim mantığı
+│   ├── homework/        # Ödev analizi ve bulmaca çözücü
+│   ├── lesson/          # Satranç tahtası kancaları ve motor entegrasyonu
+│   └── live/            # Realtime ders senkronizasyonu
+├── lib/                 # Supabase istemcisi ve harici servis yapılandırmaları
+├── theme/               # Tasarım sistemi, renk paletleri ve tipografi
+└── types/               # Veritabanı ve genel TypeScript tipleri
+supabase/
+├── migrations/          # PostgreSQL şemaları, tetikleyiciler ve RLS kuralları
+└── demo/                # Test ve geliştirme için örnek SQL verileri
+```
+
+---
+
+## 🚀 Başlangıç ve Kurulum
+
+### Gereksinimler
+
+* [Node.js](https://nodejs.org/) (v18 veya üzeri önerilir)
+* [npm](https://www.npmjs.com/) veya [bun](https://bun.sh/)
+* Test için [Expo Go](https://expo.dev/go) mobil uygulaması (iOS / Android)
+
+### 1. Bağımlılıkları Yükleyin
 
 ```bash
 npm install
-cp .env.example .env.local   # Supabase URL + publishable key'i doldurun
-npm run web                  # tarayıcıda
-npm start                    # QR kod ile telefonda (Expo Go)
 ```
 
-Kontroller (PR açmadan önce):
+> **Not:** Yeni bir paket eklerken uyumlu Expo SDK sürümünü garanti etmek için `npx expo install <paket-adi>` komutunu kullanın.
+
+### 2. Çevre Değişkenlerini Tanımlayın
+
+`.env.example` dosyasını referans alarak `.env.local` oluşturun:
 
 ```bash
+cp .env.example .env.local
+```
+
+`.env.local` dosyasını Supabase API bilgilerinizle doldurun:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-publishable-key
+```
+
+### 3. Uygulamayı Başlatın
+
+```bash
+# Web tarayıcısında çalıştırmak için:
+npm run web
+
+# Expo geliştirici sunucusunu başlatmak için (Terminaldeki QR kod ile Expo Go):
+npm start
+
+# Android / iOS simülatöründe çalıştırmak için:
+npm run android
+npm run ios
+```
+
+---
+
+## 🗄️ Veritabanı & Supabase Kurulumu
+
+1. [Supabase](https://supabase.com/) üzerinde yeni bir proje oluşturun.
+2. **SQL Editor** bölümüne giderek `supabase/migrations/` altındaki SQL dosyalarını sırayla çalıştırın.
+3. Proje ayarlarından **Project Settings → API** sekmesindeki URL ve Anon Key değerlerini `.env.local` dosyanıza kopyalayın.
+4. **Google ile Giriş (OAuth)** için:
+   * Google Cloud Console üzerinden OAuth Web Client oluşturup Supabase Auth paneline tanımlayın.
+   * Supabase Redirect URLs listesine geliştirme adreslerini ekleyin:
+     * `http://localhost:8081` (Web)
+     * `saychess://**` (Derleme / Production)
+     * `exp://**` (Expo Go)
+5. *(İsteğe Bağlı)* Geliştirme aşamasında listeleme ve randevu akışlarını test etmek için `supabase/demo/demo_koclar.sql` dosyasını SQL Editor'da çalıştırarak örnek koç profilleri yükleyebilirsiniz.
+
+---
+
+## 🧪 Kod Kalitesi ve Test
+
+PR açmadan veya yayına almadan önce aşağıdaki kontrolleri çalıştırabilirsiniz:
+
+```bash
+# TypeScript tip kontrolü
 npm run typecheck
+
+# Linter kontrolü
 npm run lint
-npx expo-doctor
+
+# Expo bağımlılık uyumluluk kontrolü
+npx expo doctor
 ```
 
-Paket eklerken `npm install` yerine **`npx expo install <paket>`** kullanın (SDK ile uyumlu sürümü seçer).
+---
 
-## Supabase (ücretsiz plan)
+## 🌐 Yayınlama (Build & Deployment)
 
-1. https://supabase.com → yeni proje (bölge: Avrupa).
-2. **SQL Editor** → `supabase/migrations/` altındaki dosyaları sırayla çalıştırın.
-3. **Project Settings → API** → URL ve *publishable* key'i `.env.local`'e yazın.
-   `service_role` / secret key asla uygulamaya girmez.
-4. Ücretsiz projeler 7 gün kullanılmazsa duraklatılır, sunumdan önce kontrol edin.
-
-## Demo verisi
-
-Gerçek koç hesabı açmadan Koç Bul / randevu akışını denemek için:
-
-`supabase/demo/demo_koclar.sql` → Supabase SQL Editor'da çalıştırın.
-3 hayali koç ekler (Elif / Mert / Zeynep). Bu hesapların şifresi yok, **giriş yapamazlar**;
-sadece listede görünüp randevu alınabilirler. Dosyanın sonundaki `delete` satırı hepsini temizler.
-
-Moderatör rolü elle verilir (SQL Editor):
-
-```sql
-update public.profiles set rol = 'moderator' where id = '<kullanici-uuid>';
-```
-
-## Google ile giriş
-
-1. **Google Cloud Console → APIs & Services → Credentials** → *OAuth client ID* → tip **Web application**.
-   *Authorized redirect URIs*: `https://<proje-ref>.supabase.co/auth/v1/callback`
-2. **Supabase → Authentication → Sign In / Providers → Google**: Client ID + Client Secret'ı girip etkinleştirin.
-3. **Supabase → Authentication → URL Configuration → Redirect URLs** listesine ekleyin:
-   - `http://localhost:8081` (web geliştirme)
-   - `saychess://**` (mobil build)
-   - `exp://**` (Expo Go ile geliştirme)
-
-Akış: Google girişi → `profiles` satırı trigger ile otomatik oluşur → ilk girişte **rol seçimi** (koç / öğrenci / veli, bir kez seçilir) → sekmeler.
-
-## Sunum akışı (demo)
-
-Tek hesapla gösterilebilecek sıra:
-
-1. **Giriş** → Google → ilk girişte rol seç (koç / öğrenci / veli).
-2. **Ders Odası** → "Maça başla (5+3)" → birkaç hamle → "Teslim ol" → maç "Son maçlarım"a düşer.
-3. **Ödev** → "Son maçı analiz et" → motor hataları bulur, ödev üretir → "Çöz" → tahtada doğru hamle → "çözüldü".
-4. **Ödev → Tema seti ekle** → "Tek hamlede mat" → 3 hazır puzzle.
-5. **Canlı Ders** → "Ders oluştur" → 6 haneli kod → ikinci pencerede kodu gir → hamleler iki cihazda senkron.
-6. **Koç Bul** → demo koçlardan biri → "Randevu" → saat seç.
-7. **Takvim** → randevuyu gör → "Puanla" → 5 yıldız → **Koç Bul**'da koçun puanı güncellenir.
-8. **Rehber** → koç olarak yazı gönder → (moderatör rolüyle) onayla → "Yayında".
-9. **Veli Paneli** → öğrencinin veli kodunu gir → çocuğun ödev/maç/ders özeti.
-
-## Yayınlama (hosting)
-
-Uygulama **web** olarak tek klasöre çıkar: `npx expo export --platform web` → `dist/`.
-İçindeki `index.html` tek sayfa (SPA) olduğu için host tarafında "her yolu index.html'e çevir" kuralı gerekir;
-`public/_redirects` (Netlify) ve `vercel.json` (Vercel) bu kuralı hazır içeriyor.
-
-### 1) Web'e koy (link ile göstermek için en kolayı)
+### Web (SPA)
+Uygulama statik web paketi olarak dışa aktarılabilir:
 ```bash
 npx expo export --platform web
 ```
-- **Netlify**: `dist` klasörünü https://app.netlify.com/drop adresine sürükle-bırak. Bitti.
-- **Vercel**: `npx vercel` (ya da panelden "Import Git Repository").
-- **EAS Hosting**: `npx eas-cli deploy` (Expo hesabı ister).
+Oluşan `dist/` klasörü [Vercel](https://vercel.com) veya [Netlify](https://netlify.com) üzerine dağıtılabilir. (`public/_redirects` ve `vercel.json` SPA yönlendirmeleri için hazır yapılandırılmıştır.)
 
-Sonra Supabase → **Authentication → URL Configuration** ve Google Cloud → **Authorized JavaScript origins**
-listesine yeni adresi (ör. `https://saychess.netlify.app`) ekle, yoksa Google girişi çalışmaz.
-
-### 2) Telefonda göster (uygulama mağazası olmadan)
+### Mobil (iOS & Android)
+Expo Application Services (EAS) kullanarak bulutta build alınabilir:
 ```bash
-npx expo start --tunnel
+# Android APK önizleme paketi için:
+npx eas-cli build -p android --profile preview
+
+# Production mağaza derlemesi için:
+npx eas-cli build --platform all
 ```
-QR kodu Expo Go ile okutan herkes uygulamayı açar (farklı ağdan da çalışır).
-Supabase → Redirect URLs içinde `exp://**` kayıtlı olmalı.
 
-Android APK (kurulabilir dosya) istiyorsan: `npx eas-cli build -p android --profile preview`
-→ EAS sana indirilebilir bir APK linki verir. iOS için TestFlight/Apple Developer hesabı gerekir.
+---
 
-### 3) Kodu teslim et (GitHub)
-```bash
-git init            # bu klasörde repo yoksa
-git add .
-git commit -m "Say Chess: Expo + TypeScript + Supabase"
-git remote add origin https://github.com/<kullanici>/<repo>.git
-git push -u origin main
-```
-`.env.local` **git'e girmez** (`.gitignore`'da). Karşı taraf `.env.example`'ı kopyalayıp kendi anahtarlarını girer.
-`service_role` / secret anahtarı asla repoya koymayın.
+## 🔧 Sık Karşılaşılan Sorunlar (Troubleshooting)
 
-
-
-## Sorun giderme
-
-| Belirti | Olası neden / çözüm |
+| Belirti | Olası Neden / Çözüm |
 |---|---|
-| "Gerekli tablo yok" | Migration'lar çalıştırılmamış. `supabase/migrations/*.sql` dosyalarını sırayla çalıştırın. |
-| Google girişinde "redirect_uri_mismatch" | Google Cloud'da yönlendirme adresi `https://<ref>.supabase.co/auth/v1/callback` olmalı. |
-| Giriş sonrası boş ekran | Supabase → Authentication → URL Configuration'da `http://localhost:8081` ekli mi? |
-| Canlı derste hamle karşıya gitmiyor | `live_moves` tablosu Realtime yayınında mı? (`alter publication supabase_realtime add table public.live_moves;`) |
-| Randevu "Bu saat dolu" | Aynı koç/saat için `unique` kısıtı çalışıyor (beklenen davranış). |
-| Analiz çok yavaş | Derinlik 2; uzun maçlarda birkaç saniye normaldir. |
-| Supabase projesi uyuyor | Ücretsiz plan 7 gün hareketsizlikte duraklatır; panelden "Restore" yapın. |
+| **Tablo veya kolon bulunamadı hatası** | Veritabanı migration'ları eksik çalıştırılmış. `supabase/migrations/*.sql` sırasını kontrol edin. |
+| **Google girişinde `redirect_uri_mismatch`** | Google Cloud Console'daki Redirect URI ile Supabase Auth callback adresi eşleşmiyor. |
+| **Canlı derste hamleler eşzamanlanmıyor** | `live_moves` tablosunun Supabase Realtime yayınına eklendiğinden emin olun (`alter publication supabase_realtime add table public.live_moves;`). |
+| **Randevuda "Bu saat dolu" uyarısı** | Seçilen saat diliminde koçun mevcut randevusu var (çakışma kısıtı çalışıyor). |
 
+---
 
+## 📄 Lisans
 
-```
-src/
-  app/                 # Expo Router: her dosya bir ekran
-    _layout.tsx        # oturum/rol durumuna göre korumalı rotalar
-    login.tsx
-    rol-sec.tsx
-    (tabs)/            # giriş yapmış ve rol seçmiş kullanıcı
-  components/          # ortak UI (Button, Card)
-  features/auth/       # AuthProvider, Google girişi, roller
-  lib/supabase.ts      # Supabase client
-  theme/               # renkler (index-3.html paleti)
-  types/database.ts    # DB tipleri (supabase gen types ile yenilenecek)
-supabase/migrations/   # şema + RLS (SQL)
-```
-
-## Yol haritası
-
-| Faz | İçerik | Durum |
-|---|---|---|
-| 0 | Expo Router + TS iskeleti, Supabase client, lint/typecheck | ✅ |
-| 1 | Google giriş, rol seçimi, profil (`profiles` + RLS) | ✅ temel (fotoğraf yükleme / koç detayları eksik) |
-| 2 | Tahta bileşeni (`chess.js`), 5+3 maç, maçların `games` tablosuna kaydı | ✅ (maç analizi Faz 3'te) |
-| 3 | Ödev: tema setleri, maç analizinden otomatik ödev, tahtada çözme | ✅ (Lichess/PGN import eksik) |
-| 4 | Koç Bul (filtreler), koç profili, müsaitlik, randevu | ✅ (ödeme yok) |
-| 5 | Canlı ders: Realtime hamle senkronu (davet kodlu oturum) | ✅ (ses/görüntü yok) |
-| 6 | Ders sonu puanlama, koç–öğrenci bağı, Veli Paneli, Satranç Rehberi + moderasyon | ✅ |
-| 7 | Paketler vitrini (fiyatlar + kapsam dışı etiketi) | 🎨 tasarım · ödeme yok |
+Bu proje [MIT Lisansı](LICENSE) kapsamında lisanslanmıştır.

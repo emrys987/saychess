@@ -115,6 +115,11 @@ export type Database = {
           puan_ort: number;
           puan_sayi: number;
           created_at: string;
+          onay_durumu: 'beklemede' | 'onaylandi' | 'reddedildi';
+          basvuru_notu: string | null;
+          ret_gerekce: string | null;
+          onaylayan_id: string | null;
+          onay_tarihi: string | null;
         };
         Insert: {
           user_id: string;
@@ -126,6 +131,11 @@ export type Database = {
           fiyat?: number;
           puan_ort?: number;
           puan_sayi?: number;
+          onay_durumu?: 'beklemede' | 'onaylandi' | 'reddedildi';
+          basvuru_notu?: string | null;
+          ret_gerekce?: string | null;
+          onaylayan_id?: string | null;
+          onay_tarihi?: string | null;
         };
         Update: {
           seviye?: string;
@@ -136,6 +146,11 @@ export type Database = {
           fiyat?: number;
           puan_ort?: number;
           puan_sayi?: number;
+          onay_durumu?: 'beklemede' | 'onaylandi' | 'reddedildi';
+          basvuru_notu?: string | null;
+          ret_gerekce?: string | null;
+          onaylayan_id?: string | null;
+          onay_tarihi?: string | null;
         };
         Relationships: [];
       };

@@ -5,7 +5,7 @@ import { colors } from '@/theme';
 
 export default function TabsLayout() {
   const pathname = usePathname();
-  const active = ['/oda', '/odev', '/koc', '/canli', '/takvim', '/rehber', '/veli', '/paketler', '/profil'].find((p) => pathname.startsWith(p)) ?? '/';
+  const active = ['/oda', '/odev', '/koc', '/canli', '/takvim', '/rehber', '/veli', '/paketler', '/profil', '/yonetim'].find((p) => pathname.startsWith(p)) ?? '/';
 
   return (
     <Tabs
@@ -25,6 +25,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="veli" options={{ title: 'Veli Paneli' }} />
       <Tabs.Screen name="paketler" options={{ title: 'Paketler' }} />
       <Tabs.Screen name="profil" options={{ title: 'Profilim' }} />
+      <Tabs.Screen name="yonetim" options={{ title: 'Yönetim' }} />
     </Tabs>
   );
 }

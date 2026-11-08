@@ -34,7 +34,7 @@ export default function KocBul() {
     let iptal = false;
     (async () => {
       const [{ data: cps }, { data: pr }] = await Promise.all([
-        supabase.from('coach_profiles').select('*'),
+        supabase.from('coach_profiles').select('*').eq('onay_durumu', 'onaylandi'),
         supabase.from('profiles').select('id, ad, bio, foto_url').eq('rol', 'koc'),
       ]);
       if (iptal) return;
@@ -120,8 +120,13 @@ export default function KocBul() {
                 <Text style={{ fontWeight: '700', color: colors.ink }}>{profil?.ad || 'İsimsiz koç'}</Text>
                 <View style={[s.row, { marginTop: 4 }]}>
                   <Chip label={cp.seviye} />
-                  {cp.elo ? <Chip label={`ELO ${cp.elo}`} tone="ok" /> : null}
-                  {cp.tsf_belgeli ? <Chip label="TSF" tone="wait" /> : null}
+                  {cp.elo ? (
+                    <Chip
+                      label={cp.elo_dogrulandi ? `ELO ${cp.elo} ✓` : `ELO ${cp.elo}`}
+                      tone={cp.elo_dogrulandi ? 'ok' : 'info'}
+                    />
+                  ) : null}
+                  {cp.tsf_belgeli ? <Chip label="TSF Belgeli" tone="wait" /> : null}
                 </View>
                 <Text style={ui.mut}>
                   {cp.yil} yıl deneyim · {cp.fiyat} TL / 45 dk

@@ -64,18 +64,20 @@ update public.profiles set
 where id = '33333333-3333-4333-8333-333333333333';
 
 -- 3) Koç bilgileri (puan alanları demo değeridir)
-insert into public.coach_profiles (user_id, seviye, elo, tsf_belgeli, yil, fiyat, puan_ort, puan_sayi) values
-  ('11111111-1111-4111-8111-111111111111', 'Başlangıç', 1450, true,  4, 400, 4.8, 12),
-  ('22222222-2222-4222-8222-222222222222', 'Orta',      1780, false, 6, 550, 4.5, 7),
-  ('33333333-3333-4333-8333-333333333333', 'İleri',     2050, true,  9, 750, 5.0, 3)
+insert into public.coach_profiles (user_id, seviye, elo, elo_dogrulandi, tsf_belgeli, yil, fiyat, puan_ort, puan_sayi, onay_durumu) values
+  ('11111111-1111-4111-8111-111111111111', 'Başlangıç', 1450, true,  true,  4, 400, 4.8, 12, 'onaylandi'),
+  ('22222222-2222-4222-8222-222222222222', 'Orta',      1780, false, false, 6, 550, 4.5, 7,  'onaylandi'),
+  ('33333333-3333-4333-8333-333333333333', 'İleri',     2050, true,  true,  9, 750, 5.0, 3,  'onaylandi')
 on conflict (user_id) do update set
   seviye = excluded.seviye,
   elo = excluded.elo,
+  elo_dogrulandi = excluded.elo_dogrulandi,
   tsf_belgeli = excluded.tsf_belgeli,
   yil = excluded.yil,
   fiyat = excluded.fiyat,
   puan_ort = excluded.puan_ort,
-  puan_sayi = excluded.puan_sayi;
+  puan_sayi = excluded.puan_sayi,
+  onay_durumu = excluded.onay_durumu;
 
 -- 4) Haftalık müsaitlik (hafta içi akşam + cumartesi)
 insert into public.availability (koc_id, gun, saat)

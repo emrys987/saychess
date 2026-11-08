@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Button, Card, Chip, PageHead, styles as ui } from '@/components/ui';
+import { Button, Card, Chip, Msg, PageHead, styles as ui } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { ROLE_LABELS } from '@/features/auth/roles';
 import { hataMesaji } from '@/lib/errors';
@@ -25,6 +25,10 @@ export default function Profil() {
   const [fiyat, setFiyat] = useState('');
   const [yil, setYil] = useState('');
   const [tsf, setTsf] = useState(false);
+  const [basvuruNotu, setBasvuruNotu] = useState('');
+  const [onayDurumu, setOnayDurumu] = useState<'beklemede' | 'onaylandi' | 'reddedildi' | null>(null);
+  const [retGerekce, setRetGerekce] = useState<string | null>(null);
+  const [eloDogrulandi, setEloDogrulandi] = useState(false);
 
   useEffect(() => {
     if (!kocMu || !userId) return;
@@ -37,6 +41,10 @@ export default function Profil() {
       setFiyat(String(data.fiyat));
       setYil(String(data.yil));
       setTsf(data.tsf_belgeli);
+      setBasvuruNotu(data.basvuru_notu ?? '');
+      setOnayDurumu(data.onay_durumu);
+      setRetGerekce(data.ret_gerekce);
+      setEloDogrulandi(data.elo_dogrulandi);
     })();
     return () => {
       iptal = true;
@@ -60,15 +68,24 @@ export default function Profil() {
     try {
       await updateProfile({ ad: ad.trim(), bio: bio.trim() });
       if (kocMu && userId) {
-        const { error } = await supabase.from('coach_profiles').upsert({
+        const payload: Record<string, unknown> = {
           user_id: userId,
           seviye,
           elo: elo ? Number(elo) : null,
           fiyat: Number(fiyat) || 0,
           yil: Number(yil) || 0,
           tsf_belgeli: tsf,
-        });
+          basvuru_notu: basvuruNotu.trim() || null,
+        };
+        if (!onayDurumu || onayDurumu === 'reddedildi') {
+          payload.onay_durumu = 'beklemede';
+        }
+        const { error } = await supabase.from('coach_profiles').upsert(payload as never);
         if (error) throw error;
+        if (!onayDurumu || onayDurumu === 'reddedildi') {
+          setOnayDurumu('beklemede');
+          setRetGerekce(null);
+        }
       }
       setMsg('Profilin kaydedildi');
     } catch (err) {
@@ -124,9 +141,32 @@ export default function Profil() {
 
       {kocMu ? (
         <Card>
-          <Text style={ui.h3}>Koç bilgileri</Text>
-          <Text style={[ui.mut, { marginBottom: 10 }]}>Bu bilgiler Koç Bul listesinde görünür.</Text>
-          <View style={s.row}>
+          <Text style={ui.h3}>Koç Bilgileri & Başvuru</Text>
+          <Text style={[ui.mut, { marginBottom: 10 }]}>Bu bilgiler onaylandıktan sonra Koç Bul listesinde görünür.</Text>
+
+          <View style={{ marginBottom: 14 }}>
+            {onayDurumu === 'onaylandi' ? (
+              <Msg tone="ok">
+                <Text style={{ fontWeight: '700' }}>✓ Koçluk Profiliniz Onaylandı</Text>
+                {'\n'}Öğrenciler sizi Koç Bul listesinde görebilir ve randevu alabilir.
+                {eloDogrulandi ? ' ELO puanınız moderatör tarafından onaylandı.' : ''}
+              </Msg>
+            ) : onayDurumu === 'reddedildi' ? (
+              <Msg tone="bad">
+                <Text style={{ fontWeight: '700' }}>✕ Başvurunuz Reddedildi</Text>
+                {retGerekce ? `\nRed Gerekçesi: ${retGerekce}` : ''}
+                {'\n'}Bilgilerinizi güncelleyip kaydettiğinizde profiliniz tekrar incelemeye alınacaktır.
+              </Msg>
+            ) : (
+              <Msg tone="info">
+                <Text style={{ fontWeight: '700' }}>⏳ Başvurunuz İnceleniyor</Text>
+                {'\n'}Profiliniz moderatör onayı bekliyor. Onaylandığında otomatik olarak Koç Bul listesinde yayınlanacaktır.
+              </Msg>
+            )}
+          </View>
+
+          <Text style={ui.eyebrow}>Hedef Öğrenci Seviyesi</Text>
+          <View style={[s.row, { marginBottom: 10 }]}>
             {SEVIYELER.map((sv) => (
               <Button
                 key={sv}
@@ -137,7 +177,7 @@ export default function Profil() {
               />
             ))}
           </View>
-          <View style={{ height: 10 }} />
+
           <View style={s.row}>
             <TextInput
               style={[ui.input, { flex: 1, minWidth: 100 }]}
@@ -170,6 +210,15 @@ export default function Profil() {
               onPress={() => setTsf((v) => !v)}
             />
           </View>
+
+          <Text style={[ui.eyebrow, { marginTop: 14 }]}>Koçluk Başvuru Notu / Lisans No</Text>
+          <TextInput
+            style={[ui.input, { minHeight: 65, textAlignVertical: 'top', marginTop: 4 }]}
+            value={basvuruNotu}
+            onChangeText={setBasvuruNotu}
+            multiline
+            placeholder="TSF antrenörlük belgesi no, FIDE unvanı, turnuva başarıları veya notlarınız..."
+          />
         </Card>
       ) : null}
 
