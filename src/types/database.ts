@@ -290,7 +290,26 @@ export type Database = {
     Functions: {
       cocuklarim: { Args: Record<string, never>; Returns: { id: string; ad: string }[] };
       veli_kodu_olustur: { Args: Record<string, never>; Returns: string };
-      veli_bagkur: { Args: { p_kod: string }; Returns: string };
+      // Bulunamadı / çok fazla deneme durumunda null döner.
+      veli_bagkur: { Args: { p_kod: string }; Returns: string | null };
+      // Katılma sunucuda atomik yapılır (yanlış kod → hata fırlatır).
+      live_katil: { Args: { p_kod: string }; Returns: Database['public']['Tables']['live_sessions']['Row'] };
+      // PII: yalnızca kişinin kendi başvuru notu/gerekçesi.
+      koc_basvurum: {
+        Args: Record<string, never>;
+        Returns: {
+          basvuru_notu: string | null;
+          ret_gerekce: string | null;
+          onay_durumu: string;
+          onay_tarihi: string | null;
+        }[];
+      };
+      // PII: yalnızca moderatör için dolu döner.
+      moderator_basvurular: {
+        Args: Record<string, never>;
+        Returns: Database['public']['Tables']['coach_profiles']['Row'][];
+      };
+      hesabimi_sil: { Args: Record<string, never>; Returns: undefined };
     };
     Enums: { user_role: UserRole };
     CompositeTypes: { [_ in never]: never };

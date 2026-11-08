@@ -26,18 +26,12 @@ async function createSessionFromUrl(url: string) {
   const params = parseAuthParams(url);
   if (params.error) throw new Error(params.error_description ?? params.error);
 
-  // PKCE akışı: dönüş adresinde ?code=... gelir
-  if (params.code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(params.code);
-    if (error) throw error;
-    return;
-  }
+  // Yalnızca PKCE akışı kabul edilir: dönüş adresinde ?code=... gelir.
+  // Güvenlik: #access_token=... (implicit) kabul edilirse saldırgan kendi token'ını
+  // içeren bir bağlantıyla oturum sabitlemesi (session fixation) yapabilir.
+  if (!params.code) return;
 
-  // Yedek: implicit akış (#access_token=...)
-  const { access_token, refresh_token } = params;
-  if (!access_token || !refresh_token) return;
-
-  const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+  const { error } = await supabase.auth.exchangeCodeForSession(params.code);
   if (error) throw error;
 }
 
@@ -47,7 +41,7 @@ async function createSessionFromUrl(url: string) {
  * bu dinleyici sayesinde giriş tamamlanır.
  */
 export async function handleAuthUrl(url: string) {
-  if (!url.includes('code=') && !url.includes('access_token=') && !url.includes('error=')) return;
+  if (!url.includes('code=') && !url.includes('error=')) return;
   await createSessionFromUrl(url);
 }
 

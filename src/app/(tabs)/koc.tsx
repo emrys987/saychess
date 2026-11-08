@@ -10,7 +10,12 @@ import { colors } from '@/theme';
 import { GUNLER, SEVIYELER, type Availability, type CoachProfile } from '@/types/database';
 
 type Profil = { id: string; ad: string; bio: string; foto_url: string | null };
-type Satir = { cp: CoachProfile; profil?: Profil };
+// Listeleme için yalnızca public kolonlar okunur (başvuru notu gibi PII alanları hariç).
+type KocOzet = Pick<
+  CoachProfile,
+  'user_id' | 'seviye' | 'elo' | 'elo_dogrulandi' | 'tsf_belgeli' | 'yil' | 'fiyat' | 'puan_ort' | 'puan_sayi' | 'onay_durumu'
+>;
+type Satir = { cp: KocOzet; profil?: Profil };
 
 const s = {
   head: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, marginBottom: 8 },
@@ -34,7 +39,11 @@ export default function KocBul() {
     let iptal = false;
     (async () => {
       const [{ data: cps }, { data: pr }] = await Promise.all([
-        supabase.from('coach_profiles').select('*').eq('onay_durumu', 'onaylandi'),
+        // Başvuru notu gibi PII kolonları artık okunamaz; sadece listeleme kolonları.
+        supabase
+          .from('coach_profiles')
+          .select('user_id, seviye, elo, elo_dogrulandi, tsf_belgeli, yil, fiyat, puan_ort, puan_sayi, onay_durumu')
+          .eq('onay_durumu', 'onaylandi'),
         supabase.from('profiles').select('id, ad, bio, foto_url').eq('rol', 'koc'),
       ]);
       if (iptal) return;

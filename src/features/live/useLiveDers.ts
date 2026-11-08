@@ -1,4 +1,5 @@
 import { Chess, type Square } from 'chess.js';
+import { getRandomBytes } from 'expo-crypto';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
@@ -6,9 +7,11 @@ import type { LiveSession } from '@/types/database';
 
 const HARFLER = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+/** Kriptografik rastgele kod (Math.random tahmin edilebilir). */
 function kodUret() {
+  const baytlar = getRandomBytes(6);
   let s = '';
-  for (let i = 0; i < 6; i++) s += HARFLER[Math.floor(Math.random() * HARFLER.length)];
+  for (let i = 0; i < 6; i++) s += HARFLER[baytlar[i] % HARFLER.length];
   return s;
 }
 
@@ -110,28 +113,15 @@ export function useLiveDers(userId: string | undefined) {
     if (!userId) return;
     setBusy(true);
     setMesaj(null);
-    const kod = girilen.trim().toUpperCase();
-    const { data, error } = await supabase.from('live_sessions').select('*').eq('kod', kod).maybeSingle();
-    if (error || !data) {
-      setBusy(false);
-      setMesaj('Bu kodla açık ders bulunamadı.');
-      return;
-    }
-    if (data.siyah_id && data.siyah_id !== userId) {
-      setBusy(false);
-      setMesaj('Bu ders dolu.');
-      return;
-    }
-    const { error: upErr } = await supabase
-      .from('live_sessions')
-      .update({ siyah_id: userId, durum: 'aktif' })
-      .eq('id', data.id);
+    // Katılma sunucu tarafında atomik yapılır: bekleyen ders listesi istemciye
+    // açılmadığı için kod tahmini / başkasının dersini ele geçirme engellenir.
+    const { data, error } = await supabase.rpc('live_katil', { p_kod: girilen.trim().toUpperCase() });
     setBusy(false);
-    if (upErr) {
-      setMesaj(upErr.message);
+    if (error || !data) {
+      setMesaj(error?.message ?? 'Bu kodla açık ders bulunamadı.');
       return;
     }
-    setOturum({ ...data, siyah_id: userId, durum: 'aktif' });
+    setOturum(data);
   }
 
   async function hamleYap(square: string) {

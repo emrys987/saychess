@@ -29,22 +29,32 @@ export default function Profil() {
   const [onayDurumu, setOnayDurumu] = useState<'beklemede' | 'onaylandi' | 'reddedildi' | null>(null);
   const [retGerekce, setRetGerekce] = useState<string | null>(null);
   const [eloDogrulandi, setEloDogrulandi] = useState(false);
+  const [silOnay, setSilOnay] = useState(false);
 
   useEffect(() => {
     if (!kocMu || !userId) return;
     let iptal = false;
     (async () => {
-      const { data } = await supabase.from('coach_profiles').select('*').eq('user_id', userId).maybeSingle();
+      // PII kolonları (basvuru_notu, ret_gerekce) artık tablodan okunamaz; ayrı RPC'den gelir.
+      const { data } = await supabase
+        .from('coach_profiles')
+        .select('seviye, elo, fiyat, yil, tsf_belgeli, onay_durumu, elo_dogrulandi')
+        .eq('user_id', userId)
+        .maybeSingle();
       if (iptal || !data) return;
       setSeviye(data.seviye);
       setElo(data.elo ? String(data.elo) : '');
       setFiyat(String(data.fiyat));
       setYil(String(data.yil));
       setTsf(data.tsf_belgeli);
-      setBasvuruNotu(data.basvuru_notu ?? '');
       setOnayDurumu(data.onay_durumu);
-      setRetGerekce(data.ret_gerekce);
       setEloDogrulandi(data.elo_dogrulandi);
+
+      const { data: basvuru } = await supabase.rpc('koc_basvurum');
+      if (iptal) return;
+      const kayit = basvuru?.[0];
+      setBasvuruNotu(kayit?.basvuru_notu ?? '');
+      setRetGerekce(kayit?.ret_gerekce ?? null);
     })();
     return () => {
       iptal = true;
@@ -60,6 +70,20 @@ export default function Profil() {
       return;
     }
     setVeliKodu(data);
+  }
+
+  /** KVKK m.7 / GDPR m.17: kullanıcı kendi hesabını ve bağlı tüm verisini silebilir. */
+  async function hesabiSil() {
+    setBusy(true);
+    setMsg(null);
+    const { error } = await supabase.rpc('hesabimi_sil');
+    if (error) {
+      setBusy(false);
+      setMsg(hataMesaji(error));
+      return;
+    }
+    await signOut().catch(() => undefined);
+    setBusy(false);
   }
 
   const kaydet = async () => {
@@ -229,7 +253,7 @@ export default function Profil() {
             Velin bu kodu Veli Paneli’ne girerek ödev/maç/ders özetini görebilir.
           </Text>
           {veliKodu ? (
-            <Text style={{ fontFamily: undefined, fontSize: 26, fontWeight: '800', letterSpacing: 4, color: colors.ink }}>
+            <Text style={{ fontFamily: undefined, fontSize: 22, fontWeight: '800', letterSpacing: 2, color: colors.ink }}>
               {veliKodu}
             </Text>
           ) : null}
@@ -242,6 +266,26 @@ export default function Profil() {
           />
         </Card>
       ) : null}
+
+      <Card>
+        <Text style={ui.h3}>Hesabımı sil</Text>
+        <Text style={[ui.mut, { marginBottom: 10 }]}>
+          Profilin, ödevlerin, maçların ve randevuların kalıcı olarak silinir. Bu işlem geri alınamaz.
+        </Text>
+        {silOnay ? (
+          <View style={s.row}>
+            <Button
+              title={busy ? 'Siliniyor…' : 'Evet, kalıcı olarak sil'}
+              variant="secondary"
+              onPress={hesabiSil}
+              disabled={busy}
+            />
+            <Button title="Vazgeç" variant="secondary" onPress={() => setSilOnay(false)} disabled={busy} />
+          </View>
+        ) : (
+          <Button title="Hesabımı sil" variant="secondary" onPress={() => setSilOnay(true)} />
+        )}
+      </Card>
 
       <Button title="Çıkış yap" variant="secondary" onPress={signOut} />
     </ScrollView>

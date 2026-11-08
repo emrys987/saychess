@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Expo web SPA: tarayıcı rotaları istemci tarafında; gizli dizin yok.
+# Aşağıdaki yollar OAuth dönüşünde kullanıldığı için indekslenmesin.
+Disallow: /auth-callback

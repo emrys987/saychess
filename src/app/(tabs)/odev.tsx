@@ -21,6 +21,7 @@ export default function Odev() {
   const { session, profile } = useAuth();
   const userId = session?.user.id;
   const kocMu = profile?.rol === 'koc';
+  const ogrenciMi = profile?.rol === 'ogrenci';
   const [liste, setListe] = useState<Homework[]>([]);
   const [secili, setSecili] = useState<Homework | null>(null);
   const [tema, setTema] = useState<string>('mat1');
@@ -64,6 +65,11 @@ export default function Odev() {
 
   async function mactanUret() {
     if (!userId) return;
+    // Ödev üretimi sunucuda yalnızca öğrenci rolüne açık (RLS).
+    if (!ogrenciMi) {
+      setMesaj('Bu bölüm öğrenci hesabı içindir.');
+      return;
+    }
     setBusy(true);
     setMesaj(null);
     setSecili(null);
@@ -109,6 +115,11 @@ export default function Odev() {
 
   async function temaEkle(hedefId?: string) {
     if (!userId) return;
+    // Öğrenci kendine ekler; koç yalnızca kendi öğrencisine atar (RLS).
+    if (!ogrenciMi && !kocMu) {
+      setMesaj('Bu bölüm öğrenci ve koç hesapları içindir.');
+      return;
+    }
     setBusy(true);
     setMesaj(null);
     const ogrenciId = hedefId ?? userId;

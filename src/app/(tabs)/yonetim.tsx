@@ -32,8 +32,10 @@ export default function YonetimPaneli() {
     if (!modMu || !userId) return;
     let iptal = false;
     (async () => {
+      // Moderatör paneli: başvuru notu gibi PII alanları normal SELECT ile okunamaz,
+      // bu yüzden yetkiyi kendi içinde kontrol eden RPC kullanılır.
       const [{ data: cps, error: errCps }, { data: pr }] = await Promise.all([
-        supabase.from('coach_profiles').select('*').order('created_at', { ascending: false }),
+        supabase.rpc('moderator_basvurular'),
         supabase.from('profiles').select('id, ad, bio, foto_url, rol'),
       ]);
 

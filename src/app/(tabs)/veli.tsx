@@ -89,6 +89,11 @@ export default function VeliPaneli() {
       setMesaj(hataMesaji(error));
       return;
     }
+    if (!data) {
+      // Sunucu, kod bulunamadığında veya çok fazla yanlış denemede null döner.
+      setMesaj('Kod bulunamadı. Çok sık denediysen 30 dakika sonra tekrar dene.');
+      return;
+    }
     setKod('');
     setMesaj(`Bağlandı: ${data}`);
     setYenile((n) => n + 1);
@@ -109,7 +114,7 @@ export default function VeliPaneli() {
         <Card>
           <Text style={ui.h3}>Çocuğa bağlan</Text>
           <Text style={[ui.mut, { marginBottom: 8 }]}>
-            Çocuğun Profilim → “Veli davet kodu” bölümünden 6 haneli kodu al ve buraya yaz.
+            Çocuğun Profilim → “Veli davet kodu” bölümünden 10 haneli kodu al ve buraya yaz.
           </Text>
           <TextInput
             style={[ui.input, { marginBottom: 10 }]}
@@ -117,13 +122,13 @@ export default function VeliPaneli() {
             onChangeText={setKod}
             autoCapitalize="characters"
             autoCorrect={false}
-            maxLength={6}
-            placeholder="Örn. A1B2C3"
+            maxLength={10}
+            placeholder="Örn. A1B2C3D4E5"
           />
           <Button
             title={busy ? 'Bağlanıyor…' : 'Bağlan'}
             onPress={baglan}
-            disabled={busy || kod.trim().length < 6}
+            disabled={busy || kod.trim().length < 10}
           />
         </Card>
       ) : (

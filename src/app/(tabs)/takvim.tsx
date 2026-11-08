@@ -167,7 +167,7 @@ export default function Takvim() {
                   </Text>
                 </View>
                 <Button sm title="İptal" variant="secondary" onPress={() => iptalEt(b.id)} disabled={busy} />
-                {!kocMu && !puanlanan.includes(b.id) ? (
+                {profile?.rol === 'ogrenci' && !puanlanan.includes(b.id) ? (
                   <Button sm title="Puanla" onPress={() => setPuanHedef(b.id)} />
                 ) : null}
               </View>
