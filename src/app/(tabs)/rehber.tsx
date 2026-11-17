@@ -14,9 +14,10 @@ const s = {
 };
 
 export default function Rehber() {
-  const { session, profile } = useAuth();
+  const { session, profile, coachApplicationStatus } = useAuth();
   const userId = session?.user.id;
   const kocMu = profile?.rol === 'koc';
+  const aktifKocMu = kocMu && coachApplicationStatus === 'onaylandi';
   const modMu = profile?.rol === 'moderator';
   const [yazilar, setYazilar] = useState<Post[]>([]);
   const [baslik, setBaslik] = useState('');
@@ -77,7 +78,9 @@ export default function Rehber() {
         lead="Koçların yazdığı, moderatör onaylı yazılar. Çocuklar için yorum yoktur."
       />
 
-      {kocMu ? (
+      {kocMu && !aktifKocMu ? <Msg tone="info">Yazı gönderme başvurun onaylandıktan sonra açılacak.</Msg> : null}
+
+      {aktifKocMu ? (
         <Card>
           <Text style={ui.h3}>Yazı gönder</Text>
           <Text style={[ui.mut, { marginBottom: 8 }]}>Gönderdiğin yazı moderatör onaylayınca yayınlanır.</Text>

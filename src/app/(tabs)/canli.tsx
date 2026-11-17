@@ -80,10 +80,10 @@ export default function CanliDers() {
           board={ders.board}
           selected={ders.secili}
           targets={ders.targets}
-          lastMove={null}
+          lastMove={ders.sonHamle}
           checkSquare={null}
           flipped={ders.benimRengim === 'b'}
-          disabled={!siradaBen}
+          disabled={!siradaBen || !ders.oturum.siyah_id || ders.oturum.durum !== 'aktif'}
           onSquarePress={ders.press}
         />
 

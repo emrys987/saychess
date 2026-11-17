@@ -262,6 +262,12 @@ export default function YonetimPaneli() {
                     • Deneyim: {cp.yil} Yıl  |  Ders Ücreti: {cp.fiyat} TL / 45 dk  |  ELO: {cp.elo ?? 'Belirtilmedi'}
                     {cp.elo_dogrulandi ? ' (Doğrulandı ✓)' : ''}
                   </Text>
+                  {cp.elo_kanit ? (
+                    <View style={{ marginTop: 6, padding: 8, backgroundColor: colors.white, borderRadius: radius.card, borderWidth: 1, borderColor: colors.line }}>
+                      <Text style={{ fontWeight: '700', fontSize: 13, color: colors.ink }}>ELO doğrulama kaynağı:</Text>
+                      <Text selectable style={{ fontSize: 13, color: colors.ink, marginTop: 2 }}>{cp.elo_kanit}</Text>
+                    </View>
+                  ) : null}
                   {profil?.bio ? (
                     <Text style={[s.detayYazi, { marginTop: 4, fontStyle: 'italic' }]}>
                       {`"${profil.bio}"`}

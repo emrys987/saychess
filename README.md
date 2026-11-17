@@ -85,18 +85,20 @@ npm install
 
 ### 2. Çevre Değişkenlerini Tanımlayın
 
-`.env.example` dosyasını referans alarak `.env.local` oluşturun:
+Proje kökünde `.env.local` dosyasını kendiniz oluşturun. Bu dosya Git'e eklenmemelidir.
 
 ```bash
-cp .env.example .env.local
+touch .env.local
 ```
 
-`.env.local` dosyasını Supabase API bilgilerinizle doldurun:
+Supabase projenizin **Project Settings → API** bölümünden proje URL'sini ve publishable key'i alıp dosyaya ekleyin:
 
 ```env
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-publishable-key
+EXPO_PUBLIC_SUPABASE_URL=https://<proje-kimligi>.supabase.co
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
 ```
+
+`service_role` veya secret key'i uygulamaya koymayın. Değerleri girdikten sonra `npm run web` komutunu yeniden başlatın.
 
 ### 3. Uygulamayı Başlatın
 

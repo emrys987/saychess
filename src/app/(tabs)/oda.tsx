@@ -1,161 +1,66 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
-import { Board } from '@/components/Board';
-import { Button, Card, Chip, Clk, Msg, PageHead, styles as ui } from '@/components/ui';
-import { useAuth } from '@/features/auth/AuthProvider';
-import { useChessGame } from '@/features/lesson/useChessGame';
-import { supabase } from '@/lib/supabase';
-import { colors } from '@/theme';
-import type { Game } from '@/types/database';
+import { Card, PageHead, styles as ui } from '@/components/ui';
+import { colors, radius } from '@/theme';
 
-function saat(sn: number) {
-  const total = Math.max(0, Math.ceil(sn));
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
-}
+const MODLAR = [
+  {
+    baslik: 'Bota karşı',
+    aciklama: 'Kendi seviyene göre bir bot seç ve tek başına oyna.',
+    simge: '♞',
+    yol: '/tek-oyunculu?mod=bot',
+  },
+  {
+    baslik: 'Serbest çalışma',
+    aciklama: 'Tahtada kendi hızında çalış veya 5+3 maç başlat.',
+    simge: '♟',
+    yol: '/tek-oyunculu?mod=serbest',
+  },
+  {
+    baslik: 'Multiplayer',
+    aciklama: 'Oda kodu oluştur, arkadaşını davet et veya gelen kodla katıl.',
+    simge: '♚',
+    yol: '/multiplayer',
+  },
+] as const;
 
-export default function DersOdası() {
-  const { session } = useAuth();
+export default function Oyna() {
   const router = useRouter();
-  const oyun = useChessGame(session?.user.id);
-  const [gecmis, setGecmis] = useState<Game[]>([]);
-  const userId = session?.user.id;
-  const { savedCount } = oyun;
-
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from('games')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (!cancelled && data) setGecmis(data);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, savedCount]);
-
-  const mac = oyun.mod === 'mac';
-  const botMod = oyun.mod === 'bot';
-  const turn = oyun.fen.split(' ')[1];
-  const canli = mac && oyun.running && !oyun.over;
+  const { width } = useWindowDimensions();
+  const ikiSutun = width >= 620;
 
   return (
     <ScrollView contentContainerStyle={ui.screen}>
-      <PageHead eyebrow="Canlı ders" title="Ders Odası" lead="Tahta, 5+3 maç ve kayıtlı maçlar tek yerde." />
-
-      <Card style={s.boardCard}>
-        <View style={s.clockRow}>
-          <Text style={ui.mut}>Koç (siyah)</Text>
-          <Clk value={mac ? saat(oyun.remaining.b) : '—'} active={canli && turn === 'b'} />
-        </View>
-        <Board
-          board={oyun.board}
-          selected={oyun.selected}
-          targets={oyun.targets}
-          lastMove={oyun.lastMove}
-          checkSquare={oyun.checkSquare}
-          flipped={oyun.flipped}
-          disabled={!!oyun.over || oyun.botDusunuyor}
-          onSquarePress={oyun.press}
-        />
-        <View style={[s.clockRow, { marginTop: 8, marginBottom: 0 }]}>
-          <Text style={ui.mut}>Öğrenci (beyaz)</Text>
-          <Clk value={mac ? saat(oyun.remaining.w) : '—'} active={canli && turn === 'w'} />
-        </View>
-        <Text style={[ui.mut, { marginTop: 8 }]}>
-          Demo: iki rol tek ekranda oynanır. Taşı seç, gideceği kareye dokun.
-        </Text>
-      </Card>
-
-      <Card>
-        <View style={s.head}>
-          <Text style={ui.h3}>{mac ? '5+3 maç' : botMod ? 'Bota karşı' : 'Serbest çalışma'}</Text>
-          <Chip
-            label={mac ? (canli ? 'çalışıyor' : 'hazır') : botMod ? (oyun.botDusunuyor ? 'bot düşünüyor…' : 'senin sıran') : 'serbest'}
-            tone={mac && canli ? 'wait' : botMod ? 'wait' : 'info'}
-          />
-        </View>
-        <View style={s.row}>
-          <Button sm title={mac ? 'Maçı yeniden başlat' : 'Maça başla (5+3)'} onPress={oyun.macBaslat} />
-          {mac && !oyun.over ? (
-            <Button sm title="Teslim ol" variant="secondary" onPress={oyun.teslim} />
-          ) : null}
-          <Button sm title="Bota karşı" variant={botMod ? 'cheese' : 'secondary'} onPress={oyun.botBaslat} />
-          <Button sm title="Geri al" variant="secondary" onPress={oyun.geriAl} disabled={mac} />
-          <Button sm title="Çevir" variant="secondary" onPress={oyun.cevir} />
-          <Button sm title="Serbest mod" variant="secondary" onPress={oyun.serbestMod} />
-        </View>
-
-        {botMod ? (
-          <View style={[s.row, { marginTop: 10 }]}>
-            <Text style={ui.mut}>Seviye:</Text>
-            {[
-              { d: 1, ad: 'Basit' },
-              { d: 2, ad: 'Orta' },
-              { d: 3, ad: 'Zor' },
-            ].map((sv) => (
-              <Button
-                key={sv.d}
-                sm
-                title={sv.ad}
-                variant={oyun.botSeviye === sv.d ? 'cheese' : 'secondary'}
-                onPress={() => oyun.botSeviyeSec(sv.d)}
-              />
-            ))}
-            <Text style={ui.mut}>Beyaz sen, siyah bot.</Text>
-          </View>
-        ) : null}
-        {oyun.over ? (
-          <>
-            <Msg tone="ok">
-              Maç bitti: {oyun.over.sebep} ({oyun.over.sonuc})
-            </Msg>
-            <Button
-              sm
-              title="Bu maçtan ödev üret →"
-              variant="cheese"
-              onPress={() => router.navigate('/odev')}
-            />
-          </>
-        ) : null}
-        {oyun.mesaj ? <Msg>{oyun.mesaj}</Msg> : null}
-        <Text style={[ui.mono, s.moves]}>{oyun.hamleler || 'Henüz hamle yok.'}</Text>
-      </Card>
-
-      <Card>
-        <Text style={ui.h3}>Son maçlarım</Text>
-        {gecmis.length ? (
-          gecmis.map((g) => (
-            <View key={g.id} style={ui.item}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: '700', color: colors.ink }}>
-                  {g.sonuc} · {g.bitis_sebebi}
-                </Text>
-                <Text style={ui.mut}>
-                  {new Date(g.created_at).toLocaleString('tr-TR')} · {g.plies} yarım hamle
-                </Text>
-              </View>
-              <Chip label={g.sonuc === '1-0' ? 'beyaz' : g.sonuc === '0-1' ? 'siyah' : 'berabere'} />
-            </View>
-          ))
-        ) : (
-          <Text style={ui.mut}>Henüz kayıtlı maç yok. Bir 5+3 maç oynayın.</Text>
-        )}
-      </Card>
+      <PageHead eyebrow="Oyun alanı" title="Oyna" lead="Bir oyun modu seç ve satranç tahtasına geç." />
+      <View style={[s.grid, ikiSutun && s.gridWide]}>
+        {MODLAR.map((mod) => (
+          <Pressable
+            key={mod.baslik}
+            accessibilityRole="button"
+            onPress={() => router.push(mod.yol)}
+            style={({ pressed }) => [s.tile, ikiSutun && s.tileWide, pressed && s.pressed]}
+          >
+            <Card style={s.card}>
+              <Text style={s.icon}>{mod.simge}</Text>
+              <Text style={ui.h3}>{mod.baslik}</Text>
+              <Text style={ui.mut}>{mod.aciklama}</Text>
+              <Text style={s.action}>Modu seç →</Text>
+            </Card>
+          </Pressable>
+        ))}
+      </View>
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  boardCard: { maxWidth: 520, width: '100%', alignSelf: 'center' },
-  clockRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
-  moves: { marginTop: 8, maxHeight: 120, lineHeight: 20 },
+  grid: { width: '100%', gap: 10, maxWidth: 840, alignSelf: 'center' },
+  gridWide: { flexDirection: 'row', flexWrap: 'wrap' },
+  tile: { width: '100%' },
+  tileWide: { flexBasis: '48%', flexGrow: 1, maxWidth: '50%' },
+  card: { minHeight: 180, borderWidth: 1.5, borderColor: colors.ink, marginBottom: 0 },
+  icon: { fontSize: 34, lineHeight: 42, color: colors.ink, marginBottom: 8 },
+  action: { color: colors.ink, fontWeight: '800', marginTop: 14 },
+  pressed: { transform: [{ translateY: -1 }], borderRadius: radius.card, opacity: 0.88 },
 });
-

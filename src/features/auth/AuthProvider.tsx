@@ -13,6 +13,9 @@ type AuthContextValue = {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  coachApplicationStatus: 'beklemede' | 'onaylandi' | 'reddedildi' | null | undefined;
+  coachApplicationLoading: boolean;
+  refreshCoachApplication: () => Promise<void>;
   updateProfile: (changes: ProfileUpdate) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -32,6 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionReady, setSessionReady] = useState(false);
   // Profil, ait olduğu kullanıcıyla birlikte tutulur; kullanıcı değişince eski profil otomatik geçersiz olur.
   const [loaded, setLoaded] = useState<LoadedProfile | null>(null);
+  const [coachApplication, setCoachApplication] = useState<{
+    userId: string;
+    status: 'beklemede' | 'onaylandi' | 'reddedildi' | null;
+  } | null>(null);
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
@@ -79,6 +86,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const profile = userId && loaded?.userId === userId ? loaded.profile : null;
   const loading = !sessionReady || (!!userId && loaded?.userId !== userId);
+  const coachApplicationLoading = profile?.rol === 'koc' && coachApplication?.userId !== userId;
+  const coachApplicationStatus =
+    profile?.rol === 'koc' && coachApplication && coachApplication.userId === userId
+      ? coachApplication.status
+      : undefined;
+
+  useEffect(() => {
+    if (!userId || profile?.rol !== 'koc') return;
+    let cancelled = false;
+    supabase.rpc('koc_basvurum').then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) {
+        setCoachApplication({ userId, status: null });
+        return;
+      }
+      const status = data?.[0]?.onay_durumu;
+      setCoachApplication({
+        userId,
+        status: status === 'beklemede' || status === 'onaylandi' || status === 'reddedildi' ? status : null,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, profile?.rol]);
+
+  const refreshCoachApplication = useCallback(async () => {
+    if (!userId || profile?.rol !== 'koc') return;
+    const { data, error } = await supabase.rpc('koc_basvurum');
+    if (error) throw error;
+    const status = data?.[0]?.onay_durumu;
+    setCoachApplication({
+      userId,
+      status: status === 'beklemede' || status === 'onaylandi' || status === 'reddedildi' ? status : null,
+    });
+  }, [userId, profile?.rol]);
 
   const updateProfile = useCallback(
     async (changes: ProfileUpdate) => {
@@ -101,7 +144,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, profile, loading, updateProfile, signOut }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        profile,
+        loading,
+        coachApplicationStatus,
+        coachApplicationLoading,
+        refreshCoachApplication,
+        updateProfile,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
