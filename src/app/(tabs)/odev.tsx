@@ -1,5 +1,6 @@
+import { Chess } from 'chess.js';
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, TextInput, View } from 'react-native';
 
 import { Button, Card, Chip, Msg, PageHead, styles as ui } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -32,6 +33,7 @@ export default function Odev() {
   const [yenile, setYenile] = useState(0);
   const [ogrenciler, setOgrenciler] = useState<{ id: string; ad: string }[]>([]);
   const [hedef, setHedef] = useState<string | null>(null);
+  const [puzzleUrl, setPuzzleUrl] = useState('');
 
   useEffect(() => {
     if (!userId) return;
@@ -163,6 +165,45 @@ export default function Odev() {
     }
   }
 
+  async function lichessBulmacaEkle() {
+    if (profile?.rol !== 'moderator') return;
+    const input = puzzleUrl.trim();
+    const puzzleId = input.match(/^(?:https?:\/\/)?(?:www\.)?lichess\.org\/training\/([a-zA-Z0-9]{5})(?:[/?#].*)?$/i)?.[1]
+      ?? input.match(/^([a-zA-Z0-9]{5})$/)?.[1];
+    if (!puzzleId) { setMesaj('Geçerli bir Lichess puzzle bağlantısı veya ID gir.'); return; }
+    setBusy(true);
+    setMesaj(null);
+    try {
+      const response = await fetch(`https://lichess.org/api/puzzle/${puzzleId}`, { headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error(response.status === 404 ? 'Bu puzzle bulunamadı.' : `Lichess yanıtı: ${response.status}`);
+      const data = await response.json() as {
+        puzzle: { id: string; rating: number; solution: string[]; themes: string[]; fen: string; lastMove?: string };
+      };
+      const lastMove = data.puzzle.lastMove;
+      if (!data.puzzle.fen || !lastMove || !/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(lastMove)) {
+        throw new Error('Lichess puzzle verisinde başlangıç konumu eksik.');
+      }
+      const first = data.puzzle.solution[0];
+      if (!first || first.length < 4) throw new Error('Lichess puzzle çözüm verisi geçersiz.');
+      const puzzleBoard = new Chess(data.puzzle.fen);
+      puzzleBoard.move({ from: lastMove.slice(0, 2), to: lastMove.slice(2, 4), promotion: lastMove[4]?.toLowerCase() });
+      const temaKey = data.puzzle.themes.some((t) => /mateIn1/i.test(t)) ? 'mat1' : data.puzzle.themes.some((t) => /fork/i.test(t)) ? 'catal' : 'kazan';
+      const { error } = await supabase.from('puzzles').insert({
+        id: `lichess-${data.puzzle.id}`,
+        tema: temaKey,
+        baslik: `Lichess #${data.puzzle.id} · ${data.puzzle.rating}`,
+        fen: puzzleBoard.fen(),
+        cozum: [first.slice(0, 4)],
+        ipucu: `Lichess temaları: ${data.puzzle.themes.join(', ')}. Kaynak: https://lichess.org/training/${data.puzzle.id} · Bulmaca verisi CC0.`,
+      });
+      if (error) throw error;
+      setPuzzleUrl('');
+      setMesaj(`Lichess #${data.puzzle.id} bulmacası ${TEMA_ADLARI[temaKey]} setine eklendi.`);
+    } catch (error) {
+      setMesaj(hataMesaji(error));
+    } finally { setBusy(false); }
+  }
+
   async function sil(id: string) {
     await supabase.from('homework').delete().eq('id', id);
     if (secili?.id === id) setSecili(null);
@@ -191,6 +232,15 @@ export default function Odev() {
           disabled={busy}
         />
       </Card>
+
+      {profile?.rol === 'moderator' ? (
+        <Card>
+          <Text style={ui.h3}>Lichess bulmacası içe aktar</Text>
+          <Text style={[ui.mut, { marginBottom: 8 }]}>Lichess puzzle bağlantısı veya ID gir; ilk doğru hamle mevcut taktik setine eklenir.</Text>
+          <TextInput style={[ui.input, { marginBottom: 8 }]} value={puzzleUrl} onChangeText={setPuzzleUrl} autoCapitalize="none" placeholder="lichess.org/training/…" />
+          <Button title={busy ? 'Alınıyor…' : 'Bulmacayı sete ekle'} onPress={lichessBulmacaEkle} disabled={busy} />
+        </Card>
+      ) : null}
 
       <Card>
         <Text style={ui.h3}>Tema seti ekle</Text>

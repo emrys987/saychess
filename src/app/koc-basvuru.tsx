@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 
 import { Button, Card, Msg, PageHead, styles as ui } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -11,6 +11,7 @@ import { SEVIYELER } from '@/types/database';
 
 export default function KocBasvuru() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { session, profile, coachApplicationStatus, updateProfile, refreshCoachApplication } = useAuth();
   const [ad, setAd] = useState(profile?.ad ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
@@ -24,6 +25,7 @@ export default function KocBasvuru() {
   const [busy, setBusy] = useState(false);
   const [mesaj, setMesaj] = useState<string | null>(null);
   const onayli = coachApplicationStatus === 'onaylandi';
+  const wide = width >= 560;
 
   useEffect(() => {
     const userId = session?.user.id;
@@ -77,8 +79,10 @@ export default function KocBasvuru() {
 
     setBusy(true);
     setMesaj(null);
+    let adim = 'Profil bilgileri kaydediliyor';
     try {
       await updateProfile({ ad: ad.trim(), bio: bio.trim() });
+      adim = 'Koç başvurusu kaydediliyor';
       const { error } = await supabase.rpc('koc_basvuru_gonder', {
         p_seviye: seviye,
         p_elo: rating,
@@ -92,7 +96,7 @@ export default function KocBasvuru() {
       setMesaj(onayli ? 'Koç profilin güncellendi.' : 'Başvurun moderatöre iletildi. Onaylanana kadar koçluk işlevleri kapalı kalacak.');
       router.replace('/');
     } catch (error) {
-      setMesaj(hataMesaji(error));
+      setMesaj(`${adim}: ${hataMesaji(error)}`);
     } finally {
       setBusy(false);
     }
@@ -139,7 +143,7 @@ export default function KocBasvuru() {
             ))}
           </View>
           <Text style={ui.eyebrow}>Deneyim (yıl) ve ücret (TL / 45 dk)</Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+          <View style={{ flexDirection: wide ? 'row' : 'column', gap: 8, marginBottom: 12 }}>
             <TextInput
               style={[ui.input, { flex: 1 }]}
               value={yil}
@@ -156,7 +160,7 @@ export default function KocBasvuru() {
             />
           </View>
           <Text style={ui.eyebrow}>ELO (isteğe bağlı)</Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+          <View style={{ flexDirection: wide ? 'row' : 'column', gap: 8, marginBottom: 8 }}>
             <TextInput
               style={[ui.input, { flex: 1 }]}
               value={elo}

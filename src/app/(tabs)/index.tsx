@@ -1,6 +1,6 @@
 import { useRouter, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type ImageSourcePropType } from 'react-native';
 
 import { Card, Chip, PageHead, Msg, styles as ui } from '@/components/ui';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -12,6 +12,9 @@ import { colors, radius } from '@/theme';
 
 type ReminderBooking = { id: string; tarih: string; saat: number };
 type ReminderHomework = { id: string; baslik: string; created_at: string };
+
+// Future tile artwork can be added here without changing the dashboard layout.
+const HOME_TILE_IMAGES: Partial<Record<string, ImageSourcePropType>> = {};
 
 export default function Home() {
   const router = useRouter();
@@ -114,18 +117,23 @@ export default function Home() {
         <View style={[s.main, genis && s.mainWide]}>
           <Text style={[ui.eyebrow, s.sectionLabel]}>Başlamak için</Text>
           <View style={s.grid}>
-            {links.map((item) => (
+            {links.map((item) => {
+              const image = HOME_TILE_IMAGES[item.href];
+              return (
               <Pressable
                 key={item.href}
                 accessibilityRole="button"
                 onPress={() => router.navigate(item.href as Href)}
                 style={({ pressed }) => [s.tile, pressed && s.tilePressed]}
               >
+                {image ? <Image source={image} resizeMode="cover" style={StyleSheet.absoluteFill} /> : null}
+                {image ? <View pointerEvents="none" style={s.imageWash} /> : null}
                 <Text style={s.icon}>{item.icon}</Text>
                 <Text style={s.tileTitle}>{item.label}</Text>
                 <Text style={s.tileDescription}>{item.description}</Text>
               </Pressable>
-            ))}
+              );
+            })}
           </View>
         </View>
 
@@ -181,6 +189,7 @@ const s = StyleSheet.create({
   sectionLabel: { marginBottom: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile: {
+    overflow: 'hidden',
     width: '48%',
     minHeight: 140,
     flexGrow: 1,
@@ -192,6 +201,7 @@ const s = StyleSheet.create({
     padding: 16,
   },
   tilePressed: { backgroundColor: colors.pink, transform: [{ translateY: -1 }] },
+  imageWash: { ...StyleSheet.absoluteFill, backgroundColor: '#fffaf0cc' },
   icon: { fontSize: 28, lineHeight: 34, color: colors.ink, marginBottom: 8 },
   tileTitle: { fontSize: 17, fontWeight: '800', color: colors.ink, marginBottom: 4 },
   tileDescription: { color: colors.mut, fontSize: 13, lineHeight: 18 },

@@ -101,7 +101,15 @@ export type Database = {
           ipucu: string;
           created_at: string;
         };
-        Insert: never;
+        Insert: {
+          id: string;
+          tema: string;
+          baslik: string;
+          fen: string;
+          cozum: string[];
+          ipucu: string;
+          created_at?: string;
+        };
         Update: never;
         Relationships: [];
       };
