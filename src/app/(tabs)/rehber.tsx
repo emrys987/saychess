@@ -78,6 +78,25 @@ export default function Rehber() {
         lead="Koçların yazdığı, moderatör onaylı yazılar. Çocuklar için yorum yoktur."
       />
 
+      <Card>
+        <Text style={ui.h3}>Bir satranç konusunu anlatma akışı</Text>
+        <Text style={[ui.mut, { marginBottom: 8 }]}>Koçlar için özgün başlangıç taslağı. Her bölümde tek bir hedef seç; öğrencinin seviyesine göre örnekleri değiştir.</Text>
+        <Text style={{ color: colors.ink, fontWeight: '700' }}>1. Hedefi söyle</Text>
+        <Text style={[ui.mut, { marginBottom: 8 }]}>Örneğin: “Bu konumda çatal tehdidini fark edeceğiz.”</Text>
+        <Text style={{ color: colors.ink, fontWeight: '700' }}>2. Düşünmeyi göster</Text>
+        <Text style={[ui.mut, { marginBottom: 8 }]}>Tahtada bir örnek kur; aday hamleleri ve kontrol ettiğin ipuçlarını sesli anlat.</Text>
+        <Text style={{ color: colors.ink, fontWeight: '700' }}>3. Öğrenciye denet</Text>
+        <Text style={[ui.mut, { marginBottom: 8 }]}>Benzer bir konum ver. Cevabı hemen söylemek yerine “Rakibin tehdidi ne?” gibi bir soru sor.</Text>
+        <Text style={{ color: colors.ink, fontWeight: '700' }}>4. Kısa tekrar yap</Text>
+        <Text style={[ui.mut, { marginBottom: 12 }]}>Öğrenciden bulduğu fikri kendi cümlesiyle açıklamasını iste ve bir alıştırmayla bitir.</Text>
+        <Text style={ui.h3}>Profesyonel kaynaklar</Text>
+        <Text style={[ui.mut, { marginBottom: 8 }]}>FIDE EDU’nun öğretmen hazırlığı ve satrancı eğitim aracı olarak kullanma materyalleri. Kaynak metinleri kopyalamadan, kendi anlatımımızı oluşturup moderatör onayına sunacağız.</Text>
+        <Text selectable style={{ color: colors.ink, fontWeight: '700' }}>FIDE EDU · Öğretmen hazırlığı</Text>
+        <Text selectable style={[ui.mut, { marginBottom: 8 }]}>https://edu.fide.com/post/65c3c6f003f66659083c9d85</Text>
+        <Text selectable style={{ color: colors.ink, fontWeight: '700' }}>FIDE EDU · Eğitim portalı</Text>
+        <Text selectable style={ui.mut}>https://edu.fide.com/</Text>
+      </Card>
+
       {kocMu && !aktifKocMu ? <Msg tone="info">Yazı gönderme başvurun onaylandıktan sonra açılacak.</Msg> : null}
 
       {aktifKocMu ? (
