@@ -394,7 +394,7 @@ begin
   elsif p_bitis_sebebi = 'Mat' then
     v_result := case when v_turn = 'w' then '0-1' else '1-0' end;
   elsif p_bitis_sebebi = 'Teslim' then
-    if auth.uid() <> case when v_turn = 'w' then v.beyaz_id else v.siyah_id end then
+    if auth.uid() <> (case when v_turn = 'w' then v.beyaz_id else v.siyah_id end) then
       raise exception 'Yalnızca sırası gelen oyuncu teslim olabilir';
     end if;
     v_result := case when v_turn = 'w' then '0-1' else '1-0' end;
