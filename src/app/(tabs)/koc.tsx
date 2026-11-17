@@ -147,7 +147,7 @@ export default function KocBul() {
           ))
         ) : (
           <Text style={ui.mut}>
-            Henüz koç yok. Koç rolüyle bir hesap açıp Profilim → Koç bilgileri bölümünü doldurun.
+            Henüz koç yok. Koç rolüyle kayıt olup zorunlu başvuru formunu tamamlayın.
           </Text>
         )}
       </Card>

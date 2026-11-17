@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { Image, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button, Card, Chip, Msg, PageHead, styles as ui } from '@/components/ui';
@@ -7,59 +8,17 @@ import { ROLE_LABELS } from '@/features/auth/roles';
 import { hataMesaji } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/theme';
-import { SEVIYELER } from '@/types/database';
 
 export default function Profil() {
-  const { session, profile, updateProfile, signOut } = useAuth();
-  const userId = session?.user.id;
-  const kocMu = profile?.rol === 'koc';
+  const router = useRouter();
+  const { session, profile, coachApplicationStatus, updateProfile, signOut } = useAuth();
   const ogrenciMi = profile?.rol === 'ogrenci';
   const [veliKodu, setVeliKodu] = useState<string | null>(profile?.veli_kodu ?? null);
   const [ad, setAd] = useState(profile?.ad ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  // Koç alanları (Koç Bul listesini besler)
-  const [seviye, setSeviye] = useState<string>('Başlangıç');
-  const [elo, setElo] = useState('');
-  const [fiyat, setFiyat] = useState('');
-  const [yil, setYil] = useState('');
-  const [tsf, setTsf] = useState(false);
-  const [basvuruNotu, setBasvuruNotu] = useState('');
-  const [onayDurumu, setOnayDurumu] = useState<'beklemede' | 'onaylandi' | 'reddedildi' | null>(null);
-  const [retGerekce, setRetGerekce] = useState<string | null>(null);
-  const [eloDogrulandi, setEloDogrulandi] = useState(false);
   const [silOnay, setSilOnay] = useState(false);
-
-  useEffect(() => {
-    if (!kocMu || !userId) return;
-    let iptal = false;
-    (async () => {
-      // PII kolonları (basvuru_notu, ret_gerekce) artık tablodan okunamaz; ayrı RPC'den gelir.
-      const { data } = await supabase
-        .from('coach_profiles')
-        .select('seviye, elo, fiyat, yil, tsf_belgeli, onay_durumu, elo_dogrulandi')
-        .eq('user_id', userId)
-        .maybeSingle();
-      if (iptal || !data) return;
-      setSeviye(data.seviye);
-      setElo(data.elo ? String(data.elo) : '');
-      setFiyat(String(data.fiyat));
-      setYil(String(data.yil));
-      setTsf(data.tsf_belgeli);
-      setOnayDurumu(data.onay_durumu);
-      setEloDogrulandi(data.elo_dogrulandi);
-
-      const { data: basvuru } = await supabase.rpc('koc_basvurum');
-      if (iptal) return;
-      const kayit = basvuru?.[0];
-      setBasvuruNotu(kayit?.basvuru_notu ?? '');
-      setRetGerekce(kayit?.ret_gerekce ?? null);
-    })();
-    return () => {
-      iptal = true;
-    };
-  }, [kocMu, userId]);
 
   async function kodOlustur() {
     setBusy(true);
@@ -91,26 +50,6 @@ export default function Profil() {
     setMsg(null);
     try {
       await updateProfile({ ad: ad.trim(), bio: bio.trim() });
-      if (kocMu && userId) {
-        const payload: Record<string, unknown> = {
-          user_id: userId,
-          seviye,
-          elo: elo ? Number(elo) : null,
-          fiyat: Number(fiyat) || 0,
-          yil: Number(yil) || 0,
-          tsf_belgeli: tsf,
-          basvuru_notu: basvuruNotu.trim() || null,
-        };
-        if (!onayDurumu || onayDurumu === 'reddedildi') {
-          payload.onay_durumu = 'beklemede';
-        }
-        const { error } = await supabase.from('coach_profiles').upsert(payload as never);
-        if (error) throw error;
-        if (!onayDurumu || onayDurumu === 'reddedildi') {
-          setOnayDurumu('beklemede');
-          setRetGerekce(null);
-        }
-      }
       setMsg('Profilin kaydedildi');
     } catch (err) {
       setMsg(hataMesaji(err));
@@ -163,86 +102,15 @@ export default function Profil() {
         {msg ? <Text style={[ui.mut, { marginTop: 8 }]}>{msg}</Text> : null}
       </Card>
 
-      {kocMu ? (
+      {profile?.rol === 'koc' ? (
         <Card>
-          <Text style={ui.h3}>Koç Bilgileri & Başvuru</Text>
-          <Text style={[ui.mut, { marginBottom: 10 }]}>Bu bilgiler onaylandıktan sonra Koç Bul listesinde görünür.</Text>
-
-          <View style={{ marginBottom: 14 }}>
-            {onayDurumu === 'onaylandi' ? (
-              <Msg tone="ok">
-                <Text style={{ fontWeight: '700' }}>✓ Koçluk Profiliniz Onaylandı</Text>
-                {'\n'}Öğrenciler sizi Koç Bul listesinde görebilir ve randevu alabilir.
-                {eloDogrulandi ? ' ELO puanınız moderatör tarafından onaylandı.' : ''}
-              </Msg>
-            ) : onayDurumu === 'reddedildi' ? (
-              <Msg tone="bad">
-                <Text style={{ fontWeight: '700' }}>✕ Başvurunuz Reddedildi</Text>
-                {retGerekce ? `\nRed Gerekçesi: ${retGerekce}` : ''}
-                {'\n'}Bilgilerinizi güncelleyip kaydettiğinizde profiliniz tekrar incelemeye alınacaktır.
-              </Msg>
-            ) : (
-              <Msg tone="info">
-                <Text style={{ fontWeight: '700' }}>⏳ Başvurunuz İnceleniyor</Text>
-                {'\n'}Profiliniz moderatör onayı bekliyor. Onaylandığında otomatik olarak Koç Bul listesinde yayınlanacaktır.
-              </Msg>
-            )}
-          </View>
-
-          <Text style={ui.eyebrow}>Hedef Öğrenci Seviyesi</Text>
-          <View style={[s.row, { marginBottom: 10 }]}>
-            {SEVIYELER.map((sv) => (
-              <Button
-                key={sv}
-                sm
-                title={sv}
-                variant={seviye === sv ? 'cheese' : 'secondary'}
-                onPress={() => setSeviye(sv)}
-              />
-            ))}
-          </View>
-
-          <View style={s.row}>
-            <TextInput
-              style={[ui.input, { flex: 1, minWidth: 100 }]}
-              value={elo}
-              onChangeText={setElo}
-              keyboardType="number-pad"
-              placeholder="ELO"
-            />
-            <TextInput
-              style={[ui.input, { flex: 1, minWidth: 100 }]}
-              value={fiyat}
-              onChangeText={setFiyat}
-              keyboardType="number-pad"
-              placeholder="45 dk ücret (TL)"
-            />
-            <TextInput
-              style={[ui.input, { flex: 1, minWidth: 100 }]}
-              value={yil}
-              onChangeText={setYil}
-              keyboardType="number-pad"
-              placeholder="Deneyim (yıl)"
-            />
-          </View>
-          <View style={{ height: 10 }} />
-          <View style={s.row}>
-            <Button
-              sm
-              title={tsf ? 'TSF belgeli ✓' : 'TSF belgeli'}
-              variant={tsf ? 'cheese' : 'secondary'}
-              onPress={() => setTsf((v) => !v)}
-            />
-          </View>
-
-          <Text style={[ui.eyebrow, { marginTop: 14 }]}>Koçluk Başvuru Notu / Lisans No</Text>
-          <TextInput
-            style={[ui.input, { minHeight: 65, textAlignVertical: 'top', marginTop: 4 }]}
-            value={basvuruNotu}
-            onChangeText={setBasvuruNotu}
-            multiline
-            placeholder="TSF antrenörlük belgesi no, FIDE unvanı, turnuva başarıları veya notlarınız..."
-          />
+          <Text style={ui.h3}>Koç başvuru durumu</Text>
+          {coachApplicationStatus === 'onaylandi' ? (
+            <Msg tone="ok">Koç profilin onaylandı ve Koç Bul’da listeleniyor.</Msg>
+          ) : (
+            <Msg tone="info">Koç başvurun moderatör incelemesinde. Onaylanınca koçluk özellikleri açılacak.</Msg>
+          )}
+          <Button sm title="Koç bilgilerini düzenle" variant="secondary" onPress={() => router.navigate('/koc-basvuru')} />
         </Card>
       ) : null}
 

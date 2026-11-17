@@ -15,9 +15,10 @@ const s = {
 };
 
 export default function Takvim() {
-  const { session, profile } = useAuth();
+  const { session, profile, coachApplicationStatus } = useAuth();
   const userId = session?.user.id;
   const kocMu = profile?.rol === 'koc';
+  const aktifKocMu = kocMu && coachApplicationStatus === 'onaylandi';
   const [slotlar, setSlotlar] = useState<Availability[]>([]);
   const [randevular, setRandevular] = useState<Booking[]>([]);
   const [isimler, setIsimler] = useState<Record<string, string>>({});
@@ -34,7 +35,7 @@ export default function Takvim() {
     if (!userId) return;
     let iptal = false;
     (async () => {
-      if (kocMu) {
+      if (aktifKocMu) {
         const { data } = await supabase.from('availability').select('*').eq('koc_id', userId);
         if (!iptal) setSlotlar(data ?? []);
       }
@@ -55,10 +56,10 @@ export default function Takvim() {
     return () => {
       iptal = true;
     };
-  }, [userId, kocMu, yenile]);
+  }, [userId, aktifKocMu, yenile]);
 
   async function slotDegistir(gun: number, saat: number) {
-    if (!userId) return;
+    if (!userId || !aktifKocMu) return;
     const varOlan = slotlar.find((sl) => sl.gun === gun && sl.saat === saat);
     if (varOlan) {
       await supabase.from('availability').delete().eq('id', varOlan.id);
@@ -101,15 +102,17 @@ export default function Takvim() {
     <ScrollView contentContainerStyle={ui.screen}>
       <PageHead
         eyebrow="Takvim"
-        title={kocMu ? 'Müsait saatlerim' : 'Randevularım'}
+        title={aktifKocMu ? 'Müsait saatlerim' : kocMu ? 'Koç başvurusu bekliyor' : 'Randevularım'}
         lead={
-          kocMu
+          aktifKocMu
             ? 'Haftalık müsait saatlerini işaretle. Ders 45 dk + 15 dk maç tamponu olarak planlanır.'
             : 'Aldığın dersler burada. Koç Bul sekmesinden yeni randevu alabilirsin.'
         }
       />
 
-      {kocMu ? (
+      {kocMu && !aktifKocMu ? <Msg tone="info">Koçluk takvimi başvurun onaylandıktan sonra açılacak.</Msg> : null}
+
+      {aktifKocMu ? (
         <Card>
           <View style={s.head}>
             <Text style={ui.h3}>Haftalık müsaitlik</Text>
@@ -163,7 +166,7 @@ export default function Takvim() {
                     {tarihYaz(b.tarih)} · {saatYaz(b.saat)}
                   </Text>
                   <Text style={ui.mut}>
-                    {kocMu ? 'Öğrenci' : 'Koç'}: {isimler[karsi] || '—'} · 45 dk
+                    {aktifKocMu ? 'Öğrenci' : 'Koç'}: {isimler[karsi] || '—'} · 45 dk
                   </Text>
                 </View>
                 <Button sm title="İptal" variant="secondary" onPress={() => iptalEt(b.id)} disabled={busy} />
@@ -175,7 +178,7 @@ export default function Takvim() {
           })
         ) : (
           <Text style={ui.mut}>
-            {kocMu ? 'Henüz randevu yok. Müsait saat ekledikçe öğrenciler randevu alabilir.' : 'Randevu yok. Koç Bul sekmesinden saat seç.'}
+            {aktifKocMu ? 'Henüz randevu yok. Müsait saat ekledikçe öğrenciler randevu alabilir.' : 'Randevu yok. Koç Bul sekmesinden saat seç.'}
           </Text>
         )}
       </Card>

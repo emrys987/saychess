@@ -4,25 +4,9 @@ import { Modal, ScrollView, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/AuthProvider';
+import { visibleNavItems } from '@/features/auth/navigation';
 import { ROLE_LABELS } from '@/features/auth/roles';
 import { colors, fonts, layout, radius } from '@/theme';
-
-// Sık kullanılan sayfalar üstte; geri kalanı "Daha fazla" menüsünde.
-const ANA_NAV = [
-  { href: '/', label: 'Ana Sayfa' },
-  { href: '/oda', label: 'Ders Odası' },
-  { href: '/odev', label: 'Ödev' },
-  { href: '/canli', label: 'Canlı Ders' },
-  { href: '/takvim', label: 'Takvim' },
-] as const;
-
-const DAHA_NAV = [
-  { href: '/koc', label: 'Koç Bul' },
-  { href: '/rehber', label: 'Satranç Rehberi' },
-  { href: '/veli', label: 'Veli Paneli' },
-  { href: '/paketler', label: 'Paketler' },
-  { href: '/profil', label: 'Profilim' },
-] as const;
 
 /** index-3.html: .logo .mark — 2x2 dama deseni */
 function LogoMark() {
@@ -41,15 +25,14 @@ export function AppHeader({ active }: { active: string }) {
   const insets = useSafeAreaInsets();
   const [dahaAcik, setDahaAcik] = useState(false);
 
-  const dahaNavList = [
-    ...DAHA_NAV,
-    ...(profile?.rol === 'moderator' ? [{ href: '/yonetim' as const, label: '🛡️ Yönetim Paneli' }] : []),
-  ];
+  const navItems = visibleNavItems(profile?.rol);
+  const anaNav = navItems.filter((item) => item.group === 'main');
+  const dahaNavList = navItems.filter((item) => item.group === 'more');
   const dahaAktif = dahaNavList.some((i) => i.href === active);
 
   const git = (href: Href | string) => {
     setDahaAcik(false);
-    router.navigate(href as any);
+    router.navigate(href as Href);
   };
 
   return (
@@ -98,7 +81,7 @@ export function AppHeader({ active }: { active: string }) {
         style={styles.navScroll}
         contentContainerStyle={styles.nav}
       >
-        {ANA_NAV.map((item) => {
+        {anaNav.map((item) => {
           const on = active === item.href;
           return (
             <Pressable
@@ -112,22 +95,6 @@ export function AppHeader({ active }: { active: string }) {
             </Pressable>
           );
         })}
-
-        {profile?.rol === 'moderator' ? (
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active === '/yonetim' }}
-            onPress={() => git('/yonetim')}
-            style={({ pressed }) => [
-              styles.navBtn,
-              { backgroundColor: colors.cheese },
-              active === '/yonetim' && styles.navBtnOn,
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <Text style={[styles.navText, { fontWeight: '800' }]}>🛡️ Yönetim</Text>
-          </Pressable>
-        ) : null}
 
         <Pressable
           accessibilityRole="button"

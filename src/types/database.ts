@@ -36,6 +36,7 @@ export type Database = {
           sonuc: string;
           bitis_sebebi: string | null;
           plies: number;
+          live_session_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -46,6 +47,7 @@ export type Database = {
           sonuc: string;
           bitis_sebebi?: string | null;
           plies?: number;
+          live_session_id?: string | null;
           created_at?: string;
         };
         Update: never;
@@ -120,6 +122,7 @@ export type Database = {
           ret_gerekce: string | null;
           onaylayan_id: string | null;
           onay_tarihi: string | null;
+          elo_kanit: string | null;
         };
         Insert: {
           user_id: string;
@@ -136,6 +139,7 @@ export type Database = {
           ret_gerekce?: string | null;
           onaylayan_id?: string | null;
           onay_tarihi?: string | null;
+          elo_kanit?: string | null;
         };
         Update: {
           seviye?: string;
@@ -151,6 +155,7 @@ export type Database = {
           ret_gerekce?: string | null;
           onaylayan_id?: string | null;
           onay_tarihi?: string | null;
+          elo_kanit?: string | null;
         };
         Relationships: [];
       };
@@ -189,6 +194,15 @@ export type Database = {
           siyah_id: string | null;
           fen: string;
           durum: 'bekliyor' | 'aktif' | 'bitti';
+          oyun_turu: 'ders' | 'oyun';
+          saat_modu: 'yok' | '5+3';
+          beyaz_saniye: number;
+          siyah_saniye: number;
+          saat_basladi_at: string | null;
+          sonuc: string | null;
+          bitis_sebebi: string | null;
+          pgn: string | null;
+          plies: number;
           created_at: string;
           updated_at: string;
         };
@@ -199,11 +213,29 @@ export type Database = {
           siyah_id?: string | null;
           fen?: string;
           durum?: 'bekliyor' | 'aktif' | 'bitti';
+          oyun_turu?: 'ders' | 'oyun';
+          saat_modu?: 'yok' | '5+3';
+          beyaz_saniye?: number;
+          siyah_saniye?: number;
+          saat_basladi_at?: string | null;
+          sonuc?: string | null;
+          bitis_sebebi?: string | null;
+          pgn?: string | null;
+          plies?: number;
         };
         Update: {
           siyah_id?: string | null;
           fen?: string;
           durum?: 'bekliyor' | 'aktif' | 'bitti';
+          oyun_turu?: 'ders' | 'oyun';
+          saat_modu?: 'yok' | '5+3';
+          beyaz_saniye?: number;
+          siyah_saniye?: number;
+          saat_basladi_at?: string | null;
+          sonuc?: string | null;
+          bitis_sebebi?: string | null;
+          pgn?: string | null;
+          plies?: number;
         };
         Relationships: [];
       };
@@ -293,7 +325,27 @@ export type Database = {
       // Bulunamadı / çok fazla deneme durumunda null döner.
       veli_bagkur: { Args: { p_kod: string }; Returns: string | null };
       // Katılma sunucuda atomik yapılır (yanlış kod → hata fırlatır).
-      live_katil: { Args: { p_kod: string }; Returns: Database['public']['Tables']['live_sessions']['Row'] };
+      live_katil: {
+        Args: { p_kod: string; p_oyun_turu: 'ders' | 'oyun' };
+        Returns: Database['public']['Tables']['live_sessions']['Row'];
+      };
+      live_hamle_yap: {
+        Args: {
+          p_session_id: string;
+          p_ply: number;
+          p_san: string;
+          p_from: string;
+          p_to: string;
+          p_promotion: string | null;
+          p_fen: string;
+          p_pgn: string;
+        };
+        Returns: Database['public']['Tables']['live_sessions']['Row'];
+      };
+      live_oyun_bitir: {
+        Args: { p_session_id: string; p_bitis_sebebi: string; p_pgn: string; p_plies: number };
+        Returns: Database['public']['Tables']['live_sessions']['Row'];
+      };
       // PII: yalnızca kişinin kendi başvuru notu/gerekçesi.
       koc_basvurum: {
         Args: Record<string, never>;
@@ -302,7 +354,19 @@ export type Database = {
           ret_gerekce: string | null;
           onay_durumu: string;
           onay_tarihi: string | null;
+          elo_kanit: string | null;
         }[];
+      };
+      koc_basvuru_gonder: {
+        Args: {
+          p_seviye: string;
+          p_elo: number | null;
+          p_elo_kanit: string | null;
+          p_fiyat: number;
+          p_yil: number;
+          p_tsf_belgeli: boolean;
+        };
+        Returns: string;
       };
       // PII: yalnızca moderatör için dolu döner.
       moderator_basvurular: {

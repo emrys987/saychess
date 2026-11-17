@@ -18,9 +18,10 @@ const s = {
 };
 
 export default function Odev() {
-  const { session, profile } = useAuth();
+  const { session, profile, coachApplicationStatus } = useAuth();
   const userId = session?.user.id;
   const kocMu = profile?.rol === 'koc';
+  const aktifKocMu = kocMu && coachApplicationStatus === 'onaylandi';
   const ogrenciMi = profile?.rol === 'ogrenci';
   const [liste, setListe] = useState<Homework[]>([]);
   const [secili, setSecili] = useState<Homework | null>(null);
@@ -46,7 +47,7 @@ export default function Odev() {
 
   // Koç ise: randevu aldığı öğrencileri yükle (koç_students, randevuyla otomatik oluşur)
   useEffect(() => {
-    if (!kocMu || !userId) return;
+    if (!aktifKocMu || !userId) return;
     let iptal = false;
     (async () => {
       const { data: cs } = await supabase.from('coach_students').select('ogrenci_id').eq('koc_id', userId);
@@ -59,7 +60,7 @@ export default function Odev() {
     return () => {
       iptal = true;
     };
-  }, [kocMu, userId]);
+  }, [aktifKocMu, userId]);
 
   const cozulen = liste.filter((h) => h.durum === 'cozuldu').length;
 
@@ -208,7 +209,9 @@ export default function Odev() {
         <Button sm title="Seti ödevlerime ekle" onPress={() => temaEkle()} disabled={busy} />
       </Card>
 
-      {kocMu ? (
+      {kocMu && !aktifKocMu ? <Msg tone="info">Öğrencilere ödev atama başvurun onaylandıktan sonra açılacak.</Msg> : null}
+
+      {aktifKocMu ? (
         <Card>
           <Text style={ui.h3}>Öğrenciye ödev ata</Text>
           {ogrenciler.length ? (

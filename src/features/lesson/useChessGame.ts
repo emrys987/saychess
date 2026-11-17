@@ -189,6 +189,7 @@ export function useChessGame(userId: string | undefined) {
 
   const macBaslat = useCallback(() => reset('mac'), [reset]);
   const serbestMod = useCallback(() => reset('serbest'), [reset]);
+  const botBaslat = useCallback(() => reset('bot'), [reset]);
 
   const geriAl = useCallback(() => {
     // Maçta geri al kapalı (orijinalde de kapalı): süresi biten tarafı geri alınca
@@ -228,7 +229,7 @@ export function useChessGame(userId: string | undefined) {
     botSeviye,
     botSeviyeSec: setBotSeviye,
     botDusunuyor,
-    botBaslat: () => reset('bot'),
+    botBaslat,
     press,
     macBaslat,
     serbestMod,
